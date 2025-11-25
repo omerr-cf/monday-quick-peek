@@ -14,7 +14,7 @@
   // Configuration
   const CONFIG = {
     hoverDelay: 500, // Delay before showing tooltip (ms) - prevents accidental triggers
-    hideDelay: 100, // Delay before hiding tooltip (ms)
+    hideDelay: 400, // Delay before hiding tooltip (ms) - increased for easier cursor movement
     tooltipId: "quick-peek-tooltip",
     selectors: {
       boardRow:
@@ -22,7 +22,7 @@
       taskName:
         '.name-cell-text, .ds-text-component-content-text, .board-row-name, [data-testid*="name"]',
     },
-    tooltipOffset: 15, // Distance from cursor/element
+    tooltipOffset: 20, // Distance from cursor/element - increased for easier cursor movement
     zIndex: 999999, // High z-index to appear above Monday.com UI
   };
 
@@ -391,7 +391,7 @@
         console.log("Monday Quick Peek: Mouse left task row, hiding tooltip");
         hideTooltip();
       }
-    }, CONFIG.hideDelay || 200);
+    }, CONFIG.hideDelay);
   }
 
   /**
@@ -412,13 +412,13 @@
    */
   function handleTooltipMouseLeave() {
     isMouseOverTooltip = false;
-    // Hide tooltip after delay when leaving tooltip
+    // Hide tooltip after delay when leaving tooltip - longer delay for better UX
     hideTimeout = setTimeout(() => {
       if (!isMouseOverTooltip) {
         console.log("Monday Quick Peek: Mouse left tooltip, hiding tooltip");
         hideTooltip();
       }
-    }, CONFIG.hideDelay || 200);
+    }, CONFIG.hideDelay);
   }
 
   /**

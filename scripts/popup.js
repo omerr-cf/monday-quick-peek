@@ -259,9 +259,10 @@ function handleApiError(error) {
  * @returns {boolean} True if format is valid
  */
 function isValidApiKeyFormat(apiKey) {
-  // Monday.com API keys are typically long alphanumeric strings
-  // Basic validation: at least 20 characters, alphanumeric and some special chars
-  return apiKey.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(apiKey);
+  // Monday.com API keys can be JWT tokens (contain dots) or alphanumeric strings
+  // Basic validation: at least 20 characters, alphanumeric and some special chars (including dots for JWT)
+  // JWT format: header.payload.signature (contains dots)
+  return apiKey.length >= 20 && /^[a-zA-Z0-9_.-]+$/.test(apiKey);
 }
 
 /**
