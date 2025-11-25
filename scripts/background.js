@@ -20,8 +20,47 @@ const CONFIG = {
   backoffMaxDelay: 60000, // Maximum backoff delay (1 minute)
 };
 
-// In-memory cache for API responses
-const apiCache = new Map();
+// In-memory LRU cache for API responses (max 50 entries)
+// Using simple LRU implementation
+const apiCache = (function createLRUCache() {
+  const cache = new Map();
+  const maxSize = 50;
+
+  return {
+    get(key) {
+      if (!cache.has(key)) return null;
+      const value = cache.get(key);
+      // Check expiry
+      if (value.expiry && Date.now() > value.expiry) {
+        cache.delete(key);
+        return null;
+      }
+      // Move to end (most recently used)
+      cache.delete(key);
+      cache.set(key, value);
+      return value;
+    },
+    set(key, value) {
+      if (cache.has(key)) {
+        cache.delete(key);
+      } else if (cache.size >= maxSize) {
+        // Remove least recently used (first item)
+        const firstKey = cache.keys().next().value;
+        cache.delete(firstKey);
+      }
+      cache.set(key, value);
+    },
+    delete(key) {
+      return cache.delete(key);
+    },
+    clear() {
+      cache.clear();
+    },
+    size() {
+      return cache.size;
+    },
+  };
+})();
 
 // Rate limiting tracking
 const rateLimitTracker = {
@@ -645,7 +684,7 @@ async function handleCacheCheck(request, sendResponse) {
     sendResponse({
       success: true,
       cached: !!cached,
-      cacheSize: apiCache.size,
+      cacheSize: apiCache.size(),
       cacheKey: cacheKey,
     });
   } catch (error) {
@@ -851,8 +890,8 @@ function getCachedResponse(key) {
   const cached = apiCache.get(key);
   if (!cached) return null;
 
-  // Check if cache is expired
-  if (Date.now() - cached.timestamp > CONFIG.cacheExpiry) {
+  // Cache.get already checks expiry, but double-check
+  if (cached.expiry && Date.now() > cached.expiry) {
     apiCache.delete(key);
     return null;
   }
@@ -866,21 +905,15 @@ function getCachedResponse(key) {
  * @param {Object|string} content - Content to cache
  */
 function setCachedResponse(key, content) {
-  // Limit cache size
-  if (apiCache.size >= CONFIG.maxCacheSize) {
-    // Remove oldest entry (FIFO)
-    const firstKey = apiCache.keys().next().value;
-    apiCache.delete(firstKey);
-    console.log("Background: Cache limit reached, removed oldest entry");
-  }
-
+  // LRU cache handles size limit automatically (max 50 entries)
   apiCache.set(key, {
     content: content,
     timestamp: Date.now(),
+    expiry: Date.now() + CONFIG.cacheExpiry,
   });
 
   console.log(
-    `Background: Cached response for key: ${key} (cache size: ${apiCache.size})`
+    `Background: Cached response for key: ${key} (cache size: ${apiCache.size()})`
   );
 }
 

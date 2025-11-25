@@ -40,6 +40,15 @@
   let currentNotes = null; // Cache current notes for search
   let currentSearchTerm = "";
 
+  // Performance: Request cancellation
+  let currentRequestKey = null;
+  let requestAbortController = null;
+
+  // Performance: Event delegation
+  let delegatedMouseEnterHandler = null;
+  let delegatedMouseLeaveHandler = null;
+  let delegatedMouseMoveHandler = null;
+
   // Mock data for testing (until API is connected)
   const mockNotes = {
     taskName: "Example Task",
@@ -462,7 +471,30 @@
       let notesData = null;
 
       if (itemId) {
-        const response = await fetchContentFromAPI(itemId, "note");
+        // Cancel any previous request for this tooltip
+        if (currentRequestKey) {
+          console.log("Monday Quick Peek: Cancelling previous request");
+          if (requestAbortController) {
+            requestAbortController.abort();
+          }
+        }
+
+        // Create new request key and abort controller
+        currentRequestKey = `tooltip-${itemId}-${Date.now()}`;
+        requestAbortController = new AbortController();
+
+        const response = await fetchContentFromAPI(
+          itemId,
+          "note",
+          requestAbortController.signal
+        );
+
+        // Check if request was cancelled
+        if (requestAbortController.signal.aborted) {
+          console.log("Monday Quick Peek: Request was cancelled");
+          return;
+        }
+
         if (response && response.success && response.data) {
           // Successfully fetched real data
           notesData = response.data;
@@ -597,6 +629,13 @@
    * Hide the current tooltip
    */
   function hideTooltip() {
+    // Cancel any in-flight requests
+    if (requestAbortController) {
+      requestAbortController.abort();
+      requestAbortController = null;
+    }
+    currentRequestKey = null;
+
     // Clear search debounce timer
     if (searchDebounceTimer) {
       clearTimeout(searchDebounceTimer);
@@ -1192,14 +1231,22 @@
    * Request content from background script (for future API integration)
    * @param {string} itemId - Monday.com item ID
    * @param {string} type - Content type (note/comment)
+   * @param {AbortSignal} signal - Abort signal for cancellation
    * @returns {Promise<Object>} Response object with success and data
    */
-  async function fetchContentFromAPI(itemId, type) {
+  async function fetchContentFromAPI(itemId, type, signal = null) {
     console.log(
       `Monday Quick Peek: Fetching content for item ${itemId}, type ${type}`
     );
 
     return new Promise((resolve, reject) => {
+      // Check if request was cancelled
+      if (signal && signal.aborted) {
+        console.log("Monday Quick Peek: Request cancelled before sending");
+        resolve(null);
+        return;
+      }
+
       // Check if extension context is still valid
       if (!chrome.runtime?.id) {
         console.warn(
@@ -1208,6 +1255,14 @@
         // Return null to trigger mock data fallback
         resolve(null);
         return;
+      }
+
+      // Set up abort listener
+      if (signal) {
+        signal.addEventListener("abort", () => {
+          console.log("Monday Quick Peek: Request aborted");
+          resolve(null);
+        });
       }
 
       chrome.runtime.sendMessage(
