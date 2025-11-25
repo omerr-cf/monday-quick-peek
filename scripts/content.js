@@ -452,6 +452,31 @@
       tooltip = document.getElementById(CONFIG.tooltipId);
     }
 
+    // Check if user can view tooltip (usage limits)
+    if (window.UsageTracker) {
+      const usageCheck = await window.UsageTracker.canShowTooltip();
+
+      if (!usageCheck.allowed && !usageCheck.showBanner) {
+        // Show upgrade prompt (only first few times)
+        await window.UsageTracker.incrementUpgradePromptCount();
+        showUpgradePrompt(tooltip, row, event, usageCheck.message);
+        return;
+      }
+
+      if (usageCheck.showBanner) {
+        // Show banner instead of blocking tooltip (but check if dismissed)
+        const wasDismissed = wasBannerDismissedToday();
+        if (!wasDismissed) {
+          showUpgradeBanner();
+        }
+        // Still show tooltip but with banner visible
+      }
+
+      // Store usage info for watermark
+      tooltip.dataset.usageRemaining = usageCheck.remaining;
+      tooltip.dataset.isPro = usageCheck.isPro ? "true" : "false";
+    }
+
     // Get task name
     const taskName = getTaskName(row);
 
@@ -527,6 +552,22 @@
       // Format and display content
       const content = formatMockContent(taskName, notesData, "");
       tooltip.innerHTML = content;
+
+      // Add free tier watermark if not Pro user
+      if (window.UsageTracker && tooltip.dataset.isPro !== "true") {
+        const remaining = parseInt(tooltip.dataset.usageRemaining) || 0;
+        addFreeWatermark(tooltip, remaining);
+      }
+
+      // Increment usage counter (only for free users, after successful tooltip display)
+      if (window.UsageTracker && tooltip.dataset.isPro !== "true") {
+        await window.UsageTracker.incrementUsage();
+        // Update watermark with new count
+        const newRemaining = parseInt(tooltip.dataset.usageRemaining) - 1;
+        if (newRemaining >= 0) {
+          updateFreeWatermark(tooltip, newRemaining);
+        }
+      }
 
       // Attach tooltip mouse events to keep it visible when hovering over it
       tooltip.addEventListener("mouseenter", handleTooltipMouseEnter);
@@ -1185,9 +1226,10 @@
       }
     }
 
-    // Check bottom edge
-    if (top + tooltipRect.height > viewportHeight + window.scrollY) {
-      // Position above cursor/row
+    // Check bottom edge - ensure entire tooltip is visible
+    const availableBottomSpace = viewportHeight + window.scrollY - top;
+    if (tooltipRect.height > availableBottomSpace) {
+      // Not enough space below - position above
       if (event && event.clientY) {
         top =
           event.clientY -
@@ -1200,6 +1242,13 @@
       }
     }
 
+    // Double-check: ensure tooltip doesn't go off bottom edge
+    const calculatedBottom = top + tooltipRect.height;
+    const maxBottom = viewportHeight + window.scrollY - CONFIG.tooltipOffset;
+    if (calculatedBottom > maxBottom) {
+      top = maxBottom - tooltipRect.height;
+    }
+
     // Ensure tooltip doesn't go off left edge
     if (left < window.scrollX) {
       left = window.scrollX + CONFIG.tooltipOffset;
@@ -1210,10 +1259,50 @@
       top = window.scrollY + CONFIG.tooltipOffset;
     }
 
+    // Final comprehensive check: ensure entire tooltip fits in viewport
+    // Re-measure after any height changes
+    const finalTooltipRect = tooltip.getBoundingClientRect();
+    const finalTop = top;
+    const tooltipBottom = finalTop + finalTooltipRect.height;
+    const viewportTop = window.scrollY;
+    const viewportBottom = viewportHeight + window.scrollY;
+
+    // If tooltip exceeds bottom, adjust
+    if (tooltipBottom > viewportBottom - CONFIG.tooltipOffset) {
+      const newTop =
+        viewportBottom - finalTooltipRect.height - CONFIG.tooltipOffset;
+      // Only adjust if it doesn't push tooltip above viewport
+      if (newTop >= viewportTop + CONFIG.tooltipOffset) {
+        top = newTop;
+      } else {
+        // Tooltip is too tall - reduce max-height to fit
+        // Account for tooltipOffset on both top and bottom, plus extra margin
+        const maxAvailableHeight =
+          viewportHeight - CONFIG.tooltipOffset * 2 - 20; // Extra 20px margin
+        tooltip.style.maxHeight = `${maxAvailableHeight}px`;
+        // Recalculate position with new height
+        const adjustedRect = tooltip.getBoundingClientRect();
+        top = viewportTop + CONFIG.tooltipOffset;
+        // Ensure it still fits
+        if (top + adjustedRect.height > viewportBottom) {
+          top = viewportBottom - adjustedRect.height - CONFIG.tooltipOffset;
+        }
+      }
+    }
+
+    // Final safety check: ensure tooltip is within viewport bounds
+    if (top < viewportTop + CONFIG.tooltipOffset) {
+      top = viewportTop + CONFIG.tooltipOffset;
+    }
+
     tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
 
-    console.log(`Monday Quick Peek: Tooltip positioned at (${left}, ${top})`);
+    console.log(
+      `Monday Quick Peek: Tooltip positioned at (${left}, ${top}), height: ${
+        tooltip.getBoundingClientRect().height
+      }px`
+    );
   }
 
   /**
@@ -1367,4 +1456,169 @@
       }, 1000);
     }
   }).observe(document, { subtree: true, childList: true });
+
+  /**
+   * Show upgrade prompt when daily limit is reached
+   * @param {HTMLElement} tooltip - Tooltip element
+   * @param {HTMLElement} row - Task row element
+   * @param {Event} event - Mouse event
+   * @param {string} message - Message to display
+   */
+  function showUpgradePrompt(tooltip, row, event, message) {
+    tooltip.innerHTML = `
+      <div class="upgrade-prompt">
+        <div class="upgrade-icon">🚀</div>
+        <h3>Upgrade to Pro</h3>
+        <p>${escapeHtml(message)}</p>
+        <button class="upgrade-btn" onclick="window.open('https://gumroad.com/l/monday-quick-peek-pro', '_blank')">
+          Upgrade Now - $9/month
+        </button>
+        <div class="upgrade-features">
+          <div class="feature">✅ Unlimited tooltip views</div>
+          <div class="feature">✅ Advanced search</div>
+          <div class="feature">✅ No watermark</div>
+          <div class="feature">✅ Priority support</div>
+        </div>
+      </div>
+    `;
+    tooltip.style.display = "block";
+    tooltip.classList.add("upgrade-mode");
+    positionTooltip(tooltip, row, event);
+    currentTooltip = tooltip;
+
+    // Attach click handler for upgrade button
+    const upgradeBtn = tooltip.querySelector(".upgrade-btn");
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+      });
+    }
+  }
+
+  /**
+   * Add free tier watermark to tooltip
+   * @param {HTMLElement} tooltip - Tooltip element
+   * @param {number} remaining - Remaining free views
+   */
+  function addFreeWatermark(tooltip, remaining) {
+    // Remove existing watermark if any
+    const existingWatermark = tooltip.querySelector(".free-watermark");
+    if (existingWatermark) {
+      existingWatermark.remove();
+    }
+
+    const watermark = document.createElement("div");
+    watermark.className = "free-watermark";
+    watermark.innerHTML = `
+      <div class="watermark-content">
+        <span class="watermark-text">⚡ ${remaining} free views left today</span>
+        <a href="#" class="watermark-upgrade" data-action="upgrade">Upgrade to Pro</a>
+      </div>
+    `;
+
+    tooltip.appendChild(watermark);
+
+    // Attach click handler for upgrade link
+    const upgradeLink = watermark.querySelector(".watermark-upgrade");
+    if (upgradeLink) {
+      upgradeLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+      });
+    }
+  }
+
+  /**
+   * Update free tier watermark with new remaining count
+   * @param {HTMLElement} tooltip - Tooltip element
+   * @param {number} remaining - Remaining free views
+   */
+  function updateFreeWatermark(tooltip, remaining) {
+    const watermark = tooltip.querySelector(".free-watermark");
+    if (watermark) {
+      const watermarkText = watermark.querySelector(".watermark-text");
+      if (watermarkText) {
+        watermarkText.textContent = `⚡ ${remaining} free views left today`;
+      }
+    }
+  }
+
+  /**
+   * Show upgrade banner at top of page (after upgrade prompt shown multiple times)
+   */
+  function showUpgradeBanner() {
+    // Check if banner already exists
+    let banner = document.getElementById("monday-quick-peek-banner");
+    if (banner) {
+      return; // Banner already showing
+    }
+
+    // Create banner
+    banner = document.createElement("div");
+    banner.id = "monday-quick-peek-banner";
+    banner.className = "monday-quick-peek-banner";
+    banner.innerHTML = `
+      <div class="banner-content">
+        <span class="banner-icon">⚡</span>
+        <span class="banner-text">Daily limit reached. <a href="#" class="banner-link" data-action="upgrade">Upgrade to Pro</a> for unlimited tooltip views.</span>
+        <button class="banner-close" aria-label="Dismiss banner">×</button>
+      </div>
+    `;
+
+    // Insert at top of body
+    document.body.insertBefore(banner, document.body.firstChild);
+
+    // Attach event listeners
+    const upgradeLink = banner.querySelector(".banner-link");
+    if (upgradeLink) {
+      upgradeLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+      });
+    }
+
+    const closeBtn = banner.querySelector(".banner-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        hideUpgradeBanner();
+        // Remember dismissal for this session (don't show again today)
+        if (window.UsageTracker) {
+          const today = window.UsageTracker.getToday();
+          sessionStorage.setItem(`bannerDismissed_${today}`, "true");
+        }
+      });
+    }
+
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+      if (banner && banner.parentNode) {
+        hideUpgradeBanner();
+      }
+    }, 10000);
+  }
+
+  /**
+   * Hide upgrade banner
+   */
+  function hideUpgradeBanner() {
+    const banner = document.getElementById("monday-quick-peek-banner");
+    if (banner) {
+      banner.classList.add("banner-hiding");
+      setTimeout(() => {
+        if (banner.parentNode) {
+          banner.parentNode.removeChild(banner);
+        }
+      }, 300);
+    }
+  }
+
+  /**
+   * Check if banner was dismissed today
+   */
+  function wasBannerDismissedToday() {
+    if (!window.UsageTracker) return false;
+    const today = window.UsageTracker.getToday();
+    return sessionStorage.getItem(`bannerDismissed_${today}`) === "true";
+  }
 })();

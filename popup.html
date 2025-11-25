@@ -398,6 +398,67 @@
           How to get your API key
         </a>
       </div>
+
+      <!-- Dev Mode Section -->
+      <div
+        class="dev-section"
+        id="devSection"
+        style="
+          margin-top: 24px;
+          padding-top: 24px;
+          border-top: 1px solid #e1e4e8;
+        "
+      >
+        <div class="dev-header">
+          <h3
+            style="
+              font-size: 14px;
+              font-weight: 600;
+              margin: 0 0 12px 0;
+              color: #676879;
+            "
+          >
+            Developer Mode
+          </h3>
+        </div>
+        <div
+          class="dev-controls"
+          style="display: flex; flex-direction: column; gap: 12px"
+        >
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+            "
+          >
+            <input
+              type="checkbox"
+              id="disableTracking"
+              style="cursor: pointer"
+            />
+            <span style="font-size: 13px; color: #323338"
+              >Disable usage tracking (for development)</span
+            >
+          </label>
+          <button
+            id="resetUsageBtn"
+            class="dev-button"
+            style="
+              padding: 8px 16px;
+              background: #f3f4f6;
+              border: 1px solid #e1e4e8;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 13px;
+              color: #323338;
+            "
+          >
+            Reset Usage Data
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="loading-overlay" id="loadingOverlay">

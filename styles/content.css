@@ -38,7 +38,7 @@
   --tooltip-padding: 0;
   --tooltip-border-radius: 12px;
   --tooltip-width: 420px;
-  --tooltip-max-height: 500px;
+  --tooltip-max-height: 430px;
 
   /* Typography */
   --tooltip-font-size: 14px;
@@ -74,7 +74,12 @@
 .monday-quick-peek-tooltip {
   position: fixed;
   width: var(--tooltip-width);
-  max-height: var(--tooltip-max-height);
+  /* Dynamic max-height: account for tooltipOffset (20px) on top and bottom, plus extra margin */
+  /* This ensures tooltip is never cut off at edges */
+  max-height: min(
+    var(--tooltip-max-height),
+    calc(100vh - 60px) /* 20px top offset + 20px bottom offset + 20px margin */
+  );
   background: var(--tooltip-bg);
   border-radius: var(--tooltip-border-radius);
   box-shadow: var(--tooltip-shadow);
@@ -359,6 +364,17 @@ mark.search-highlight {
   ); /* Account for header and search */
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
+
+/* When watermark exists, reduce content max-height to make room for it */
+#quick-peek-tooltip:has(.free-watermark) .tooltip-content {
+  max-height: calc(
+    var(--tooltip-max-height) - 120px - 44px
+  ); /* Account for header (60px), search (60px), and watermark (44px min-height) */
+  padding-bottom: 8px; /* Small gap between content and watermark */
+  margin-bottom: 0; /* No margin - watermark handles spacing */
+}
+
+/* No extra padding needed - watermark is now part of flex flow and won't overlap */
 
 .tooltip-content:empty::before {
   content: "No notes available";
@@ -1014,4 +1030,242 @@ mark.search-highlight {
   white-space: pre-wrap;
   word-wrap: break-word;
   margin: 0;
+}
+
+/* ============================================
+   UPGRADE PROMPT - Free Tier Limit Reached
+   ============================================ */
+
+.upgrade-prompt {
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  min-width: 420px;
+  position: relative;
+}
+
+.upgrade-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.upgrade-prompt h3 {
+  font-size: 24px;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: white;
+}
+
+.upgrade-prompt p {
+  font-size: 16px;
+  margin: 0 0 24px 0;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+.upgrade-btn {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 20px 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.upgrade-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.upgrade-btn:active {
+  transform: scale(0.98);
+}
+
+.upgrade-features {
+  margin-top: 24px;
+  font-size: 14px;
+  text-align: left;
+  display: inline-block;
+}
+
+.upgrade-features .feature {
+  margin: 8px 0;
+  opacity: 0.95;
+  padding-left: 8px;
+}
+
+/* ============================================
+   FREE TIER WATERMARK
+   ============================================ */
+
+.free-watermark {
+  position: relative; /* Part of flex flow, not absolute */
+  /* Solid background with high opacity so text behind is not visible */
+  background: rgba(102, 126, 234, 0.95);
+  border-top: 2px solid rgba(102, 126, 234, 0.5); /* More prominent border */
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  border-radius: 0 0 12px 12px;
+  z-index: 10;
+  flex-shrink: 0 !important; /* Don't shrink - always visible */
+  flex-grow: 0 !important; /* Don't grow */
+  margin-top: 0; /* No margin needed - it's at bottom */
+  order: 999; /* Ensure it's last in flex order */
+  /* Ensure watermark text is readable on colored background */
+  color: white;
+  min-height: 44px; /* Fixed minimum height to ensure visibility */
+  box-sizing: border-box;
+  /* Make it stand out more */
+  box-shadow: 0 -2px 8px rgba(102, 126, 234, 0.2); /* Subtle shadow above */
+  /* Ensure it's always visible - positioned at bottom of flex container */
+  /* Note: Using relative, not sticky, because it's in a flex column */
+}
+
+.watermark-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.watermark-text {
+  color: white; /* White text on purple background for better contrast */
+  font-weight: 500;
+}
+
+.watermark-upgrade {
+  color: white; /* White text on purple background */
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.watermark-upgrade:hover {
+  opacity: 0.9;
+  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.2); /* Light white overlay on hover */
+}
+
+/* Tooltip content already has padding-bottom when watermark exists (see above) */
+
+.upgrade-mode {
+  min-width: 420px;
+  max-width: 500px;
+}
+
+/* ============================================
+   UPGRADE BANNER - Top of Page
+   ============================================ */
+
+.monday-quick-peek-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  z-index: 999998;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  animation: bannerSlideDown 0.3s ease-out;
+  font-family: var(--tooltip-font-family);
+}
+
+@keyframes bannerSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.monday-quick-peek-banner.banner-hiding {
+  animation: bannerSlideUp 0.3s ease-in forwards;
+}
+
+@keyframes bannerSlideUp {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+.banner-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.banner-link {
+  color: white;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.banner-link:hover {
+  opacity: 0.8;
+}
+
+.banner-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.banner-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Adjust page content when banner is visible */
+body:has(#monday-quick-peek-banner) {
+  padding-top: 48px;
 }

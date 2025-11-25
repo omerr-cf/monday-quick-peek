@@ -11,6 +11,8 @@ let statusIndicator = null;
 let statusMessage = null;
 let togglePasswordBtn = null;
 let loadingOverlay = null;
+let disableTrackingCheckbox = null;
+let resetUsageBtn = null;
 
 // State
 let isTesting = false;
@@ -37,6 +39,8 @@ function initializeElements() {
   statusMessage = document.getElementById("statusMessage");
   togglePasswordBtn = document.getElementById("togglePassword");
   loadingOverlay = document.getElementById("loadingOverlay");
+  disableTrackingCheckbox = document.getElementById("disableTracking");
+  resetUsageBtn = document.getElementById("resetUsageBtn");
 
   if (saveButton) {
     originalButtonText =
@@ -93,6 +97,17 @@ function attachEventListeners() {
   // Toggle password visibility
   if (togglePasswordBtn) {
     togglePasswordBtn.addEventListener("click", togglePasswordVisibility);
+  }
+
+  // Dev mode: Disable tracking checkbox
+  if (disableTrackingCheckbox) {
+    disableTrackingCheckbox.addEventListener("change", handleTrackingToggle);
+    loadDevSettings();
+  }
+
+  // Dev mode: Reset usage button
+  if (resetUsageBtn) {
+    resetUsageBtn.addEventListener("click", handleResetUsage);
   }
 }
 
