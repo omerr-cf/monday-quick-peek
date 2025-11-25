@@ -31,6 +31,11 @@
   let mutationObserver = null;
   let isInitialized = false;
 
+  // Search state
+  let searchDebounceTimer = null;
+  let currentNotes = null; // Cache current notes for search
+  let currentSearchTerm = "";
+
   // Mock data for testing (until API is connected)
   const mockNotes = {
     taskName: "Example Task",
@@ -39,15 +44,41 @@
         id: "1",
         author: "Sarah Kim",
         authorPhoto: "https://via.placeholder.com/32",
-        content: "This is a test note about the task. It contains important information that the user wants to preview quickly.",
-        createdAt: "2024-11-20T10:30:00Z",
+        content:
+          "This is a test note about the task. It contains important information that the user wants to preview quickly.",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
       },
       {
         id: "2",
         author: "Mike Chen",
         authorPhoto: "https://via.placeholder.com/32",
-        content: "Another update on progress. We've made significant improvements to the feature.",
-        createdAt: "2024-11-21T14:20:00Z",
+        content:
+          "Another update on progress. We've made significant improvements to the feature. The search functionality is working great!",
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
+      },
+      {
+        id: "3",
+        author: "Emma Wilson",
+        authorPhoto: "https://via.placeholder.com/32",
+        content:
+          "Don't forget to test the highlighting feature. It should highlight matching text in yellow.",
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+      },
+      {
+        id: "4",
+        author: "David Park",
+        authorPhoto: "https://via.placeholder.com/32",
+        content:
+          "The debounce is set to 150ms for smooth real-time filtering. This prevents too many re-renders.",
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      },
+      {
+        id: "5",
+        author: "Sarah Kim",
+        authorPhoto: "https://via.placeholder.com/32",
+        content:
+          "Search works across note content, author names, and timestamps. Try searching for 'Sarah' or 'test'.",
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
       },
     ],
   };
@@ -303,8 +334,11 @@
     // Get task name
     const taskName = getTaskName(row);
 
+    // Reset search state for new tooltip
+    currentSearchTerm = "";
+
     // For now, use mock data (will be replaced with API call)
-    const content = formatMockContent(taskName, mockNotes);
+    const content = formatMockContent(taskName, mockNotes, "");
 
     tooltip.innerHTML = content;
     tooltip.style.display = "block";
@@ -313,6 +347,12 @@
     positionTooltip(tooltip, row, event);
 
     currentTooltip = tooltip;
+
+    // Attach search listeners after content is set
+    setTimeout(() => {
+      attachSearchListeners();
+    }, 50);
+
     console.log("Monday Quick Peek: Tooltip displayed");
   }
 
@@ -320,12 +360,21 @@
    * Hide the current tooltip
    */
   function hideTooltip() {
+    // Clear search debounce timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = null;
+    }
+
     if (currentTooltip) {
       currentTooltip.style.display = "none";
       currentTooltip.innerHTML = "";
       currentTooltip = null;
       console.log("Monday Quick Peek: Tooltip hidden");
     }
+
+    // Reset search state
+    currentSearchTerm = "";
     currentTarget = null;
   }
 
@@ -356,36 +405,338 @@
   }
 
   /**
-   * Format mock content for display
+   * Filter notes based on search term
+   * @param {string} searchTerm - Search term
+   * @param {Array} notes - Array of notes to filter
+   * @returns {Array} Filtered notes
+   */
+  function filterNotes(searchTerm, notes) {
+    if (!searchTerm || !notes) return notes;
+
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return notes;
+
+    return notes.filter((note) => {
+      const searchIn = [
+        note.content || "",
+        note.author || "",
+        note.createdAt ? new Date(note.createdAt).toLocaleDateString() : "",
+        note.createdAt ? new Date(note.createdAt).toLocaleTimeString() : "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchIn.includes(term);
+    });
+  }
+
+  /**
+   * Highlight matching text in a string
+   * @param {string} text - Text to highlight
+   * @param {string} searchTerm - Search term to highlight
+   * @returns {string} Text with highlighted matches
+   */
+  function highlightMatches(text, searchTerm) {
+    if (!searchTerm || !text) return escapeHtml(text || "");
+
+    const term = searchTerm.trim();
+    if (!term) return escapeHtml(text);
+
+    // Escape HTML first, then highlight
+    const escapedText = escapeHtml(text);
+    const regex = new RegExp(`(${escapeRegex(term)})`, "gi");
+    return escapedText.replace(
+      regex,
+      '<mark class="search-highlight">$1</mark>'
+    );
+  }
+
+  /**
+   * Escape special regex characters
+   * @param {string} str - String to escape
+   * @returns {string} Escaped string
+   */
+  function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  /**
+   * Format relative time (e.g., "2 hours ago", "3 days ago")
+   * @param {string} dateString - ISO date string
+   * @returns {string} Relative time string
+   */
+  function formatRelativeTime(dateString) {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return "just now";
+    if (diffMins < 60)
+      return `${diffMins} ${diffMins === 1 ? "minute" : "minutes"} ago`;
+    if (diffHours < 24)
+      return `${diffHours} ${diffHours === 1 ? "hour" : "hours"} ago`;
+    if (diffDays < 7)
+      return `${diffDays} ${diffDays === 1 ? "day" : "days"} ago`;
+
+    return date.toLocaleDateString();
+  }
+
+  /**
+   * Format mock content for display with search functionality
    * @param {string} taskName - Name of the task
    * @param {Object} mockData - Mock notes data
+   * @param {string} searchTerm - Optional search term
    * @returns {string} Formatted HTML
    */
-  function formatMockContent(taskName, mockData) {
+  function formatMockContent(taskName, mockData, searchTerm = "") {
+    // Cache notes
+    if (mockData.notes) {
+      currentNotes = mockData.notes;
+    }
+
+    // Filter notes if search term exists
+    let notesToDisplay = currentNotes || [];
+    if (searchTerm) {
+      notesToDisplay = filterNotes(searchTerm, currentNotes || []);
+    }
+
+    const totalNotes = (currentNotes || []).length;
+    const filteredCount = notesToDisplay.length;
+
     let html = `<div class="tooltip-header">
       <strong class="tooltip-task-name">${escapeHtml(taskName)}</strong>
     </div>`;
 
-    if (mockData.notes && mockData.notes.length > 0) {
+    // Add search input
+    html += `<div class="tooltip-search">
+      <div class="search-input-wrapper">
+        <input 
+          type="text" 
+          class="search-input" 
+          placeholder="Search notes..." 
+          value="${escapeHtml(searchTerm)}"
+          autocomplete="off"
+        />
+        ${
+          searchTerm
+            ? '<button class="search-clear" aria-label="Clear search">×</button>'
+            : ""
+        }
+      </div>
+    </div>`;
+
+    // Add content area
+    html += '<div class="tooltip-content">';
+
+    if (notesToDisplay.length > 0) {
+      // Show count if searching
+      if (searchTerm && totalNotes > 0) {
+        html += `<div class="search-results-count">${filteredCount} of ${totalNotes} note${
+          totalNotes !== 1 ? "s" : ""
+        }</div>`;
+      }
+
       html += '<div class="tooltip-notes">';
-      mockData.notes.forEach((note) => {
+      notesToDisplay.forEach((note) => {
+        const relativeTime = formatRelativeTime(note.createdAt);
         const date = new Date(note.createdAt).toLocaleDateString();
+        const timestamp = relativeTime || date;
+
+        // Highlight matches in content, author, and timestamp
+        const highlightedContent = highlightMatches(note.content, searchTerm);
+        const highlightedAuthor = highlightMatches(note.author, searchTerm);
+        const highlightedTimestamp = highlightMatches(timestamp, searchTerm);
+
         html += `
-          <div class="tooltip-note">
+          <div class="tooltip-note note-item">
             <div class="tooltip-note-header">
-              <span class="tooltip-author">${escapeHtml(note.author)}</span>
-              <span class="tooltip-timestamp">${date}</span>
+              <span class="tooltip-author note-author">
+                ${
+                  note.authorPhoto
+                    ? `<img src="${escapeHtml(
+                        note.authorPhoto
+                      )}" alt="${escapeHtml(note.author)}" />`
+                    : ""
+                }
+                <span class="author-name">${highlightedAuthor}</span>
+              </span>
+              <span class="tooltip-timestamp note-time">${highlightedTimestamp}</span>
             </div>
-            <div class="tooltip-body">${escapeHtml(note.content)}</div>
+            <div class="tooltip-body note-body">${highlightedContent}</div>
           </div>
         `;
       });
       html += "</div>";
     } else {
-      html += '<div class="tooltip-body">No notes available</div>';
+      // Empty state
+      if (searchTerm) {
+        html += `<div class="search-empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <div class="empty-state-title">No notes found</div>
+          <div class="empty-state-message">Try a different search term</div>
+        </div>`;
+      } else if (totalNotes === 0) {
+        html += `<div class="search-empty-state">
+          <div class="empty-state-icon">📝</div>
+          <div class="empty-state-title">No notes available</div>
+          <div class="empty-state-message">This task has no notes yet</div>
+        </div>`;
+      }
     }
 
+    html += "</div>"; // Close tooltip-content
+
     return html;
+  }
+
+  /**
+   * Update tooltip content with search results
+   * @param {string} searchTerm - Search term
+   */
+  function updateTooltipContent(searchTerm = "") {
+    if (!currentTooltip) return;
+
+    const taskName =
+      currentTooltip.querySelector(".tooltip-task-name")?.textContent || "Task";
+    const mockData = { notes: currentNotes || [] };
+    const newContent = formatMockContent(taskName, mockData, searchTerm);
+
+    // Get current scroll position
+    const contentArea = currentTooltip.querySelector(".tooltip-content");
+    const scrollTop = contentArea ? contentArea.scrollTop : 0;
+
+    // Update content
+    currentTooltip.innerHTML = newContent;
+
+    // Restore scroll position
+    const newContentArea = currentTooltip.querySelector(".tooltip-content");
+    if (newContentArea) {
+      newContentArea.scrollTop = scrollTop;
+    }
+
+    // Re-attach search event listeners
+    attachSearchListeners();
+  }
+
+  /**
+   * Attach event listeners to search input
+   */
+  function attachSearchListeners() {
+    if (!currentTooltip) return;
+
+    const searchInput = currentTooltip.querySelector(".search-input");
+    const clearButton = currentTooltip.querySelector(".search-clear");
+
+    if (searchInput) {
+      // Remove existing listeners by cloning (prevents duplicate listeners)
+      const wrapper = searchInput.parentElement;
+      if (wrapper && wrapper.classList.contains("search-input-wrapper")) {
+        const newInput = searchInput.cloneNode(true);
+        searchInput.replaceWith(newInput);
+
+        // Debounced search
+        newInput.addEventListener("input", (e) => {
+          const term = e.target.value;
+          currentSearchTerm = term;
+
+          // Show/hide clear button
+          updateClearButton(term);
+
+          // Clear existing debounce timer
+          if (searchDebounceTimer) {
+            clearTimeout(searchDebounceTimer);
+          }
+
+          // Debounce search (150ms)
+          searchDebounceTimer = setTimeout(() => {
+            updateTooltipContent(term);
+          }, 150);
+        });
+
+        // Handle Enter key (prevent form submission)
+        newInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+          }
+        });
+
+        // Handle Escape key to clear search
+        newInput.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && currentSearchTerm) {
+            currentSearchTerm = "";
+            newInput.value = "";
+            updateTooltipContent("");
+            updateClearButton("");
+            e.preventDefault();
+          }
+        });
+
+        // Focus search input when tooltip opens (only if no search term)
+        if (!currentSearchTerm) {
+          setTimeout(() => {
+            newInput.focus();
+          }, 100);
+        }
+      }
+    }
+
+    if (clearButton) {
+      clearButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        currentSearchTerm = "";
+        updateTooltipContent("");
+        const input = currentTooltip.querySelector(".search-input");
+        if (input) {
+          input.value = "";
+          input.focus();
+        }
+        updateClearButton("");
+      });
+    }
+  }
+
+  /**
+   * Update clear button visibility
+   * @param {string} searchTerm - Current search term
+   */
+  function updateClearButton(searchTerm) {
+    if (!currentTooltip) return;
+
+    const clearButton = currentTooltip.querySelector(".search-clear");
+    const searchWrapper = currentTooltip.querySelector(".search-input-wrapper");
+
+    if (searchTerm && searchTerm.trim()) {
+      if (!clearButton && searchWrapper) {
+        const btn = document.createElement("button");
+        btn.className = "search-clear";
+        btn.setAttribute("aria-label", "Clear search");
+        btn.textContent = "×";
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          currentSearchTerm = "";
+          updateTooltipContent("");
+          const input = currentTooltip.querySelector(".search-input");
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+          updateClearButton("");
+        });
+        searchWrapper.appendChild(btn);
+      }
+    } else {
+      if (clearButton) {
+        clearButton.remove();
+      }
+    }
   }
 
   /**
@@ -414,7 +765,11 @@
     if (left + tooltipRect.width > viewportWidth + window.scrollX) {
       // Position to the left of cursor/row
       if (event && event.clientX) {
-        left = event.clientX - tooltipRect.width - CONFIG.tooltipOffset + window.scrollX;
+        left =
+          event.clientX -
+          tooltipRect.width -
+          CONFIG.tooltipOffset +
+          window.scrollX;
       } else {
         left = rect.right - tooltipRect.width + window.scrollX;
       }
@@ -424,9 +779,14 @@
     if (top + tooltipRect.height > viewportHeight + window.scrollY) {
       // Position above cursor/row
       if (event && event.clientY) {
-        top = event.clientY - tooltipRect.height - CONFIG.tooltipOffset + window.scrollY;
+        top =
+          event.clientY -
+          tooltipRect.height -
+          CONFIG.tooltipOffset +
+          window.scrollY;
       } else {
-        top = rect.top - tooltipRect.height - CONFIG.tooltipOffset + window.scrollY;
+        top =
+          rect.top - tooltipRect.height - CONFIG.tooltipOffset + window.scrollY;
       }
     }
 
@@ -443,9 +803,7 @@
     tooltip.style.top = `${top}px`;
     tooltip.style.left = `${left}px`;
 
-    console.log(
-      `Monday Quick Peek: Tooltip positioned at (${left}, ${top})`
-    );
+    console.log(`Monday Quick Peek: Tooltip positioned at (${left}, ${top})`);
   }
 
   /**
@@ -502,7 +860,9 @@
     const url = location.href;
     if (url !== lastUrl) {
       lastUrl = url;
-      console.log("Monday Quick Peek: Page navigation detected, re-initializing");
+      console.log(
+        "Monday Quick Peek: Page navigation detected, re-initializing"
+      );
       isInitialized = false;
       setTimeout(() => {
         init();
