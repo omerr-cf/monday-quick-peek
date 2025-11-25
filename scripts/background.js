@@ -217,7 +217,7 @@ function buildFetchNotesQuery(taskId) {
         column_values {
           id
           text
-          title
+          type
         }
       }
     }
@@ -250,7 +250,7 @@ function buildGraphQLQuery(itemId, type, updateId) {
           column_values {
             id
             text
-            title
+            type
           }
         }
       }
@@ -458,7 +458,7 @@ async function fetchTaskNotes(taskId, apiKey) {
       })),
       columnValues: (item.column_values || []).map((col) => ({
         id: col.id,
-        title: col.title || "",
+        type: col.type || "",
         text: col.text || "",
       })),
     };

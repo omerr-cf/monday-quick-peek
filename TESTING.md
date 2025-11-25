@@ -1,6 +1,6 @@
 # Local Testing Guide - Monday Quick Peek
 
-This guide will help you test the Monday Quick Peek extension locally in Chrome.
+Complete guide for testing and debugging the Monday Quick Peek extension.
 
 ---
 
@@ -9,11 +9,10 @@ This guide will help you test the Monday Quick Peek extension locally in Chrome.
 1. [Loading Extension in Chrome](#loading-extension-in-chrome)
 2. [Setting Up Monday.com Account](#setting-up-mondaycom-account)
 3. [Testing the Extension](#testing-the-extension)
-4. [Debugging Tips](#debugging-tips)
+4. [Debugging Tooltip Issues](#debugging-tooltip-issues)
 5. [Common Issues & Solutions](#common-issues--solutions)
 6. [Hot Reload During Development](#hot-reload-during-development)
 7. [Testing Checklist](#testing-checklist)
-8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -23,47 +22,24 @@ This guide will help you test the Monday Quick Peek extension locally in Chrome.
 
 1. **Open Chrome Extensions Page**
 
-   - Open Google Chrome
    - Navigate to `chrome://extensions`
    - Or: Menu (⋮) → Extensions → Manage extensions
 
 2. **Enable Developer Mode**
 
-   - Toggle "Developer mode" switch in the top-right corner
+   - Toggle "Developer mode" switch (top-right)
    - This enables loading unpacked extensions
 
 3. **Load the Extension**
 
-   - Click "Load unpacked" button
-   - Navigate to the `monday-quick-peek` folder
-   - Select the folder and click "Select Folder" (or "Open" on Windows)
+   - Click "Load unpacked"
+   - Select the `monday-quick-peek` folder (the one with `manifest.json`)
+   - Extension should appear in the list
 
 4. **Verify Extension Loaded**
-
-   - The extension should appear in the extensions list
-   - Check for the extension icon in the Chrome toolbar
+   - Check for extension icon in Chrome toolbar
    - Status should show "Enabled"
-
-5. **Check for Errors**
-   - Look for any red error messages
-   - Click "Errors" button if present to see details
-   - Fix any issues before proceeding
-
-### Visual Guide
-
-```
-Chrome Extensions Page:
-┌─────────────────────────────────────────┐
-│  Extensions  [Developer mode: ON]      │
-├─────────────────────────────────────────┤
-│  [Load unpacked]                        │
-│                                         │
-│  Monday Quick Peek                      │
-│  Version 1.0.0                         │
-│  [Details] [Remove] [Reload]           │
-│  ✓ Enabled                             │
-└─────────────────────────────────────────┘
-```
+   - No red error messages
 
 ---
 
@@ -73,61 +49,47 @@ Chrome Extensions Page:
 
 1. Go to [monday.com](https://monday.com)
 2. Click "Get Started" or "Sign Up"
-3. Create a free account (no credit card required)
-4. Complete the onboarding process
+3. Create a free account
+4. Complete onboarding
 
 ### 2. Get API Key
 
 1. **Navigate to Developer Settings**
 
-   - Click your profile picture (top-right)
-   - Select "Admin" or "Account"
+   - Click profile picture (top-right) → "Admin"
    - Go to "Developers" section
-   - Or directly visit: https://auth.monday.com/users/sign_in_new
+   - Or visit: https://auth.monday.com/users/sign_in_new
 
 2. **Generate API Token**
 
    - Click "Generate new token" or "API Token"
-   - Give it a name (e.g., "Quick Peek Extension")
-   - Copy the token immediately (you won't see it again)
+   - Name it (e.g., "Quick Peek Extension")
+   - **Copy the token immediately** (you won't see it again)
    - Save it securely
 
-3. **Verify Token Format**
-   - API tokens are typically long alphanumeric strings
-   - Should be at least 20+ characters
-   - Example format: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+3. **API Key Format**
+   - Monday.com API keys are JWT tokens
+   - Format: `eyJhbGci...` (long string with dots)
+   - Should be 100+ characters long
 
 ### 3. Create Test Board
 
 1. **Create New Board**
 
-   - Click "+" button or "Add" → "Board"
-   - Name it "Test Board" or "Quick Peek Testing"
-   - Choose a board template (e.g., "Project Management")
+   - Click "+" → "Board"
+   - Name it "Test Board"
+   - Choose a template
 
 2. **Add Sample Tasks**
 
-   - Add at least 3-5 tasks with different names
-   - Use descriptive names like:
-     - "Implement user authentication"
-     - "Design new dashboard"
-     - "Write documentation"
+   - Add 3-5 tasks with descriptive names
+   - Examples: "Implement authentication", "Design dashboard"
 
 3. **Add Notes to Tasks**
-
    - Click on a task to open it
    - Scroll to "Updates" section
-   - Add multiple notes/updates:
-     - "Started working on this task"
-     - "Completed first phase"
-     - "Need to review with team"
+   - Add multiple notes/updates
    - Add notes from different users if possible
-
-4. **Test Data Scenarios**
-   - Create a task with no notes (empty state test)
-   - Create a task with many notes (10+ notes)
-   - Create a task with long note content
-   - Create a task with special characters in notes
 
 ---
 
@@ -137,18 +99,17 @@ Chrome Extensions Page:
 
 1. **Open Extension Settings**
 
-   - Click the extension icon in Chrome toolbar
+   - Click extension icon in Chrome toolbar
    - Or: Right-click icon → "Options"
 
 2. **Enter API Key**
 
-   - Paste your Monday.com API key
+   - Paste your Monday.com API key (JWT token)
    - Click "Save & Test"
-   - Wait for validation (should show "Connected")
+   - Wait for validation
 
 3. **Verify Connection**
-   - Status indicator should turn green
-   - Should show "Connected" message
+   - Status should show "Connected" (green)
    - If error, check API key format
 
 ### 2. Test Hover Functionality
@@ -156,7 +117,7 @@ Chrome Extensions Page:
 1. **Navigate to Monday.com Board**
 
    - Go to your test board
-   - Make sure you're on a board view (not item detail)
+   - Make sure you're on a board view (Table/Kanban)
 
 2. **Hover Over Task Rows**
 
@@ -164,242 +125,238 @@ Chrome Extensions Page:
    - Wait 500ms (hover delay)
    - Tooltip should appear
 
-3. **Verify Tooltip Content**
-
-   - Task name appears in header (purple gradient)
-   - Notes are displayed below
-   - Each note shows:
-     - Author name and photo
-     - Relative timestamp ("2 hours ago")
-     - Note content
-
-4. **Test Tooltip Positioning**
-   - Hover near screen edges
-   - Tooltip should reposition to stay visible
-   - Tooltip should follow cursor movement
-
-### 3. Test Search Functionality
-
-1. **Open Tooltip**
-
-   - Hover over task with multiple notes
-   - Tooltip should appear
-
-2. **Use Search Input**
-
-   - Type in search box (should auto-focus)
-   - Search for text that appears in notes
-   - Verify notes filter in real-time
-
-3. **Test Search Features**
-
-   - Search highlights matching text (yellow)
-   - Results count shows "X of Y notes"
-   - Clear button (×) appears when typing
-   - Empty state shows when no matches
-
-4. **Test Edge Cases**
-   - Search for non-existent text
-   - Search with special characters
-   - Clear search and verify all notes return
-
-### 4. Test Error Handling
-
-1. **Invalid API Key**
-
-   - Enter invalid API key in settings
-   - Hover over task
-   - Should show error message with "Open Settings" button
-
-2. **Network Error**
-
-   - Disconnect internet
-   - Hover over task
-   - Should show network error with retry option
-
-3. **Task Not Found**
-   - Hover over deleted/non-existent task
-   - Should show "Task not found" error
+3. **Verify Tooltip**
+   - Task name in header (purple gradient)
+   - Notes displayed below
+   - Author names and photos
+   - Relative timestamps
 
 ---
 
-## Debugging Tips
+## Debugging Tooltip Issues
 
-### 1. Open Developer Tools
+### If Tooltip Doesn't Appear
 
-**Keyboard Shortcut:**
+Follow these debugging steps:
 
-- `F12` or `Cmd+Option+I` (Mac) / `Ctrl+Shift+I` (Windows/Linux)
+#### Step 1: Check Console for Errors
 
-**Or:**
+1. **Open Developer Tools**
 
-- Right-click on page → "Inspect"
-- Menu → More Tools → Developer Tools
+   - Press `F12` or `Cmd+Option+I` (Mac) / `Ctrl+Shift+I` (Windows)
+   - Or: Right-click → "Inspect"
 
-### 2. Check Console for Errors
+2. **Check Console Tab**
 
-1. **Open Console Tab**
+   - Look for "Monday Quick Peek" messages
+   - Check for red error messages
+   - Look for these key messages:
+     ```
+     Monday Quick Peek: Content script loaded
+     Monday Quick Peek: Extension initialized successfully
+     Monday Quick Peek: Found X task rows using selector: ...
+     Monday Quick Peek: Attached hover listeners to X task rows
+     ```
 
-   - Look for red error messages
-   - Check for extension-related errors
-   - Look for "Monday Quick Peek" log messages
+3. **Common Console Messages to Look For:**
+   - ✅ `Content script loaded` - Script is running
+   - ✅ `Found X task rows` - Rows detected
+   - ✅ `Attached hover listeners` - Listeners attached
+   - ❌ `No task rows found` - Selectors not matching
+   - ❌ `Error: ...` - Something is broken
 
-2. **Common Console Messages**
+#### Step 2: Check if Task Rows Are Detected
 
+1. **Open Console**
+2. **Run this command:**
+
+   ```javascript
+   // Check what selectors find
+   document.querySelectorAll(".board-row").length;
+   document.querySelectorAll('[data-testid*="board-row"]').length;
+   document.querySelectorAll('[class*="boardRow"]').length;
    ```
-   Monday Quick Peek: Content script loaded
-   Monday Quick Peek: Extension initialized successfully
-   Monday Quick Peek: Tooltip displayed
+
+3. **Expected Results:**
+   - Should return number > 0
+   - If all return 0, Monday.com structure changed
+
+#### Step 3: Check Monday.com DOM Structure
+
+1. **Inspect a Task Row**
+
+   - Right-click on a task row
+   - Select "Inspect"
+   - Look at the HTML structure
+
+2. **Find the Row Element**
+
+   - Look for classes like: `board-row`, `BoardRow`, `item-row`
+   - Check for data attributes: `data-testid`, `data-item-id`
+
+3. **Update Selectors if Needed**
+   - If structure is different, update `CONFIG.selectors` in `content.js`
+   - Add new selectors that match Monday.com's current structure
+
+#### Step 4: Check Extension Initialization
+
+1. **In Console, Check:**
+
+   ```javascript
+   // Check if tooltip element exists
+   document.getElementById("quick-peek-tooltip");
+
+   // Check if extension is initialized
+   // (This won't work directly, but check console logs)
    ```
 
-3. **Error Patterns to Look For**
-   - `Failed to fetch` - Network/API issues
-   - `Invalid API key` - Authentication problems
-   - `Cannot read property` - JavaScript errors
-   - `Uncaught TypeError` - Code issues
+2. **Look for Initialization Messages:**
+   - Should see: "Extension initialized successfully"
+   - Should see: "MutationObserver set up"
 
-### 3. Check Network Tab
+#### Step 5: Test Hover Manually
 
-1. **Open Network Tab in DevTools**
+1. **In Console, Try:**
 
+   ```javascript
+   // Find a row
+   const row = document.querySelector(".board-row");
+
+   // Trigger hover event manually
+   row.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+
+   // Check if tooltip appears
+   setTimeout(() => {
+     const tooltip = document.getElementById("quick-peek-tooltip");
+     console.log("Tooltip:", tooltip);
+     console.log("Display:", tooltip?.style.display);
+   }, 600);
+   ```
+
+#### Step 6: Check for CSS Conflicts
+
+1. **Inspect Tooltip Element**
+
+   - If tooltip exists but not visible:
+   - Check `display` style (should be "block")
+   - Check `z-index` (should be 999999)
+   - Check for CSS conflicts
+
+2. **In Console:**
+   ```javascript
+   const tooltip = document.getElementById("quick-peek-tooltip");
+   if (tooltip) {
+     console.log("Display:", window.getComputedStyle(tooltip).display);
+     console.log("Z-index:", window.getComputedStyle(tooltip).zIndex);
+     console.log("Visibility:", window.getComputedStyle(tooltip).visibility);
+   }
+   ```
+
+#### Step 7: Check API Calls
+
+1. **Open Network Tab**
+
+   - In DevTools, go to "Network" tab
    - Filter by "Fetch/XHR"
-   - Look for requests to `api.monday.com`
 
-2. **Verify API Calls**
+2. **Hover Over Task**
 
-   - Should see POST requests to `https://api.monday.com/v2`
-   - Check request headers (Authorization, API-Version)
-   - Check response status (200 = success, 401 = auth error, 429 = rate limit)
+   - Hover over a task row
+   - Look for API calls to `api.monday.com`
 
-3. **Inspect API Responses**
-   - Click on request → "Response" tab
-   - Verify data structure matches expected format
-   - Check for GraphQL errors
+3. **Check API Response**
+   - Click on the request
+   - Check "Response" tab
+   - Verify data structure
 
-### 4. Inspect Tooltip Element
+#### Step 8: Check Task ID Extraction
 
-1. **Inspect Tooltip**
-
-   - Right-click on tooltip → "Inspect"
-   - Or: Use element picker (Ctrl+Shift+C)
-
-2. **Check Element Structure**
-
-   - Should have ID: `quick-peek-tooltip`
-   - Should have class: `monday-quick-peek-tooltip`
-   - Check for error classes: `error-state`
-
-3. **Check Styles**
-   - Verify CSS is loaded
-   - Check computed styles
-   - Look for missing styles or conflicts
-
-### 5. Use Console.log() for Debugging
-
-Add temporary logging in code:
+The extension needs to extract the task ID from the row. Check if this works:
 
 ```javascript
-// In content.js
-console.log("Monday Quick Peek: Hover detected", row);
-console.log("Monday Quick Peek: API response", response);
-console.log("Monday Quick Peek: Tooltip content", content);
+// In console, on a task row
+const row = document.querySelector(".board-row");
+// Check for ID in various places
+console.log("Dataset:", row.dataset);
+console.log("ID attribute:", row.id);
+console.log("Data-item-id:", row.getAttribute("data-item-id"));
 ```
-
-**View Logs:**
-
-- Open Console tab
-- Filter by "Monday Quick Peek"
-- See step-by-step execution
-
-### 6. Check Extension Background Script
-
-1. **Open Extension Service Worker**
-
-   - Go to `chrome://extensions`
-   - Find "Monday Quick Peek"
-   - Click "service worker" link (if available)
-   - Or: Right-click extension → "Inspect popup" → "Background page"
-
-2. **Check Background Logs**
-   - Look for API call logs
-   - Check for storage operations
-   - Verify message passing
 
 ---
 
 ## Common Issues & Solutions
 
-| Issue                          | Symptoms                          | Solution                                                                                |
-| ------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------- |
-| **Extension not loading**      | Red error in extensions page      | Check `manifest.json` syntax, verify all file paths exist                               |
-| **Tooltip not appearing**      | No tooltip on hover               | Check console for errors, verify hover detection selectors, check z-index               |
-| **API calls failing**          | Network errors, 401/403 responses | Verify API key is correct, check API key permissions, test API key in Postman           |
-| **Styling broken**             | Tooltip looks wrong, no colors    | Check CSS file path in manifest, verify CSS is loaded, check for conflicts              |
-| **Search not working**         | Search input doesn't filter       | Check JavaScript console, verify event listeners attached, check debounce timing        |
-| **Tooltip positioning wrong**  | Tooltip off-screen or overlapping | Check positioning logic, verify viewport calculations, test at different screen sizes   |
-| **Settings not saving**        | API key doesn't persist           | Check Chrome storage permissions, verify storage.js is working, check quota             |
-| **Extension crashes**          | Extension stops working           | Check console for errors, verify all dependencies loaded, check for infinite loops      |
-| **Icons not showing**          | Extension icon missing            | Verify icon files exist in `icons/` folder, check manifest.json paths, regenerate icons |
-| **Content script not running** | No console logs from extension    | Check manifest matches, verify content script is injected, reload extension             |
+### Issue: Tooltip Not Appearing
 
-### Detailed Solutions
+**Possible Causes:**
 
-#### Extension Not Loading
+1. Selectors don't match Monday.com structure
+2. Extension not initialized
+3. JavaScript errors preventing execution
+4. CSS conflicts hiding tooltip
+5. Task ID not being extracted
 
-**Check:**
+**Solutions:**
 
-1. `manifest.json` syntax is valid JSON
-2. All file paths in manifest exist
-3. No typos in file names
-4. File permissions are correct
+1. Check console for errors
+2. Verify selectors match current Monday.com DOM
+3. Check if rows are being found
+4. Verify extension is enabled
+5. Try reloading extension and page
 
-**Fix:**
+### Issue: "No task rows found"
 
-```bash
-# Validate JSON
-cat manifest.json | python -m json.tool
+**Cause:** Selectors don't match Monday.com's current structure
 
-# Check file paths
-ls -la scripts/background.js
-ls -la scripts/content.js
-ls -la styles/content.css
-```
+**Solution:**
 
-#### Tooltip Not Appearing
+1. Inspect a task row in DevTools
+2. Find the actual class/attribute names
+3. Update `CONFIG.selectors.boardRow` in `content.js`
+4. Add new selectors that match
 
-**Check:**
-
-1. Console for JavaScript errors
-2. Hover detection selectors match Monday.com DOM
-3. Tooltip element is created
-4. Z-index is high enough (999999)
-
-**Debug:**
+**Example:**
 
 ```javascript
-// In console on Monday.com page
-document.querySelectorAll(".board-row").length; // Should be > 0
-document.getElementById("quick-peek-tooltip"); // Should exist
+selectors: {
+  boardRow: '.board-row, .new-class-name, [data-new-attribute]',
+  // Add more selectors as needed
+}
 ```
 
-#### API Calls Failing
+### Issue: Tooltip Appears But Is Empty
 
-**Check:**
+**Possible Causes:**
 
-1. API key is valid and active
-2. API key has correct permissions
-3. Network connectivity
-4. Monday.com API status
+1. API key not configured
+2. API calls failing
+3. Task has no notes
+4. Data formatting issue
 
-**Test API Key:**
+**Solutions:**
 
-```bash
-# Using curl
-curl -X POST https://api.monday.com/v2 \
-  -H "Authorization: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ me { id name } }"}'
-```
+1. Check API key in settings
+2. Check Network tab for API errors
+3. Verify task has notes/updates
+4. Check console for API response
+
+### Issue: Extension Not Loading
+
+**Solutions:**
+
+1. Check `manifest.json` syntax
+2. Verify all file paths exist
+3. Check for missing icon files
+4. Look for errors in `chrome://extensions`
+
+### Issue: API Calls Failing
+
+**Solutions:**
+
+1. Verify API key is correct (JWT token format)
+2. Check API key has proper permissions
+3. Test API key in Monday.com API playground
+4. Check Network tab for error responses
 
 ---
 
@@ -416,310 +373,123 @@ curl -X POST https://api.monday.com/v2 \
 
    - Go to `chrome://extensions`
    - Find "Monday Quick Peek"
-   - Click reload icon (circular arrow) 🔄
+   - Click reload icon (🔄)
 
 3. **Reload Monday.com Page**
 
-   - Refresh the Monday.com page (F5 or Cmd+R)
-   - Or: Hard refresh (Cmd+Shift+R / Ctrl+Shift+R)
+   - Refresh the page (F5 or Cmd+R)
+   - Or: Hard refresh (Cmd+Shift+R)
 
 4. **Test Changes**
    - Hover over task rows
    - Check console for new logs
-   - Verify changes work
-
-### Auto-Reload Extension (Advanced)
-
-Install a Chrome extension like "Extensions Reloader" to automatically reload your extension on file changes.
-
-### Development Workflow
-
-```
-1. Edit code → Save
-2. Reload extension (chrome://extensions)
-3. Reload Monday.com page
-4. Test changes
-5. Check console for errors
-6. Repeat
-```
-
-### Tips for Faster Development
-
-- Keep DevTools open while developing
-- Use console.log() liberally
-- Test one feature at a time
-- Use breakpoints for complex debugging
-- Keep Monday.com page open in one tab
-- Keep chrome://extensions open in another tab
 
 ---
 
 ## Testing Checklist
 
-Use this checklist to ensure all features work correctly:
-
 ### Basic Functionality
 
-- [ ] Extension loads without errors in `chrome://extensions`
-- [ ] Extension icon appears in Chrome toolbar
-- [ ] Settings popup opens when clicking icon
-- [ ] API key can be entered and saved
-- [ ] API key validation works (shows "Connected" or error)
+- [ ] Extension loads without errors
+- [ ] Extension icon appears in toolbar
+- [ ] Settings popup opens
+- [ ] API key can be saved
+- [ ] API key validation works
 
 ### Hover Detection
 
-- [ ] Hover over task row triggers tooltip (after 500ms delay)
-- [ ] Tooltip appears near cursor/row
-- [ ] Tooltip disappears when mouse leaves (after 100ms delay)
-- [ ] No flickering when moving between rows
-- [ ] Works on different board views (Table, Kanban, etc.)
+- [ ] Console shows "Content script loaded"
+- [ ] Console shows "Found X task rows"
+- [ ] Console shows "Attached hover listeners"
+- [ ] Hover triggers tooltip (after 500ms)
+- [ ] Tooltip appears near cursor
+- [ ] Tooltip disappears on mouse leave
 
 ### Tooltip Display
 
-- [ ] Task name appears in header with purple gradient
-- [ ] Notes are displayed correctly
-- [ ] Author names and photos show
-- [ ] Relative timestamps display ("2 hours ago")
-- [ ] Note content is properly formatted
-- [ ] Empty state shows when task has no notes
-- [ ] Tooltip has proper styling (colors, shadows, borders)
-
-### Tooltip Positioning
-
-- [ ] Tooltip repositions when near right edge
-- [ ] Tooltip repositions when near bottom edge
-- [ ] Tooltip repositions when near left edge
-- [ ] Tooltip repositions when near top edge
-- [ ] Tooltip never goes off-screen
-- [ ] Tooltip maintains proper spacing
+- [ ] Task name appears in header
+- [ ] Notes are displayed
+- [ ] Author names show
+- [ ] Timestamps show
+- [ ] Empty state works (no notes)
 
 ### Search Functionality
 
-- [ ] Search input appears in tooltip
-- [ ] Search input auto-focuses when tooltip opens
-- [ ] Typing filters notes in real-time (with debounce)
-- [ ] Search highlights matching text (yellow)
-- [ ] Results count displays ("3 of 12 notes")
-- [ ] Clear button (×) appears when typing
-- [ ] Clear button removes search and shows all notes
-- [ ] Empty search state shows "No notes found"
-- [ ] Search is case-insensitive
-- [ ] Search works in content, author, and timestamps
+- [ ] Search input appears
+- [ ] Typing filters notes
+- [ ] Highlights work
+- [ ] Clear button works
 
 ### Error Handling
 
-- [ ] Invalid API key shows error message
-- [ ] Network error shows error with retry option
-- [ ] Rate limit error shows appropriate message
-- [ ] Task not found shows error message
-- [ ] Error messages auto-dismiss after 5 seconds
-- [ ] Error UI has red color scheme
-- [ ] Error actions work (Open Settings, Retry, Dismiss)
-
-### Performance
-
-- [ ] Tooltip appears quickly (< 1 second)
-- [ ] No lag when hovering rapidly
-- [ ] Smooth scrolling with many notes
-- [ ] No memory leaks (check task manager)
-- [ ] Works with 20+ notes without issues
-
-### Edge Cases
-
-- [ ] Works with tasks that have no notes
-- [ ] Works with tasks that have many notes (20+)
-- [ ] Works with very long note content
-- [ ] Works with special characters in notes
-- [ ] Works with missing author data
-- [ ] Works with missing author photos
-- [ ] Works with very long task names
-
-### Settings & Persistence
-
-- [ ] API key persists after browser restart
-- [ ] Settings save correctly
-- [ ] Settings load correctly on popup open
-- [ ] Connection status updates correctly
-
-### Browser Compatibility
-
-- [ ] Works in Chrome (latest)
-- [ ] Works in Chrome Beta
-- [ ] Works in Edge (Chromium)
-- [ ] No console errors in any browser
-
-### Accessibility
-
-- [ ] Tooltip is keyboard accessible (if applicable)
-- [ ] Search input is keyboard accessible
-- [ ] Buttons are keyboard accessible
-- [ ] Error messages are readable
-- [ ] Colors have sufficient contrast
+- [ ] Invalid API key shows error
+- [ ] Network errors show error
+- [ ] Error messages are clear
 
 ---
 
-## Troubleshooting
+## Quick Debugging Commands
 
-### Issue: Extension Icon Not Appearing
+### In Browser Console (on Monday.com page)
 
-**Symptoms:**
+```javascript
+// Check if extension script loaded
+// Look for console messages starting with "Monday Quick Peek"
 
-- Extension loads but no icon in toolbar
+// Check if rows are found
+document.querySelectorAll(".board-row").length;
 
-**Solutions:**
+// Check if tooltip element exists
+document.getElementById("quick-peek-tooltip");
 
-1. Check `manifest.json` has correct icon paths
-2. Verify icon files exist: `icons/icon16.png`, `icons/icon48.png`, `icons/icon128.png`
-3. Regenerate icons using scripts in `assets/` folder
-4. Reload extension after adding icons
-5. Check Chrome toolbar is not hidden (right-click toolbar → show extensions)
+// Manually trigger hover
+const row = document.querySelector(".board-row");
+row.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
 
-### Issue: Tooltip Appears But Is Empty
+// Check extension state
+// (Check console logs for initialization messages)
+```
 
-**Symptoms:**
+### Check Extension Files
 
-- Tooltip shows but no content
+```bash
+# Verify all files exist
+ls -la scripts/content.js
+ls -la scripts/background.js
+ls -la styles/content.css
+ls -la icons/icon*.png
 
-**Solutions:**
+# Check manifest syntax
+cat manifest.json | python -m json.tool
+```
 
-1. Check console for API errors
-2. Verify API key is valid and has permissions
-3. Check Network tab for API calls
-4. Verify task has notes/updates
-5. Check content.js is formatting data correctly
+---
 
-### Issue: Tooltip Positioning Is Wrong
+## Getting Help
 
-**Symptoms:**
-
-- Tooltip appears off-screen or in wrong location
-
-**Solutions:**
-
-1. Check `positionTooltip()` function in content.js
-2. Verify viewport calculations
-3. Test at different screen sizes
-4. Check for CSS conflicts
-5. Verify tooltip has `position: fixed`
-
-### Issue: Search Not Filtering
-
-**Symptoms:**
-
-- Search input works but notes don't filter
-
-**Solutions:**
-
-1. Check console for JavaScript errors
-2. Verify `filterNotes()` function
-3. Check event listeners are attached
-4. Verify debounce is working (150ms)
-5. Check note data structure matches expected format
-
-### Issue: API Key Not Saving
-
-**Symptoms:**
-
-- API key doesn't persist after closing popup
-
-**Solutions:**
-
-1. Check Chrome storage permissions in manifest
-2. Verify `storage.js` is working
-3. Check storage quota (Chrome sync = 100KB max)
-4. Test storage in console:
-   ```javascript
-   chrome.storage.sync.get("apiKey", (result) => {
-     console.log("API Key:", result.apiKey);
-   });
-   ```
-
-### Issue: Extension Works But Slow
-
-**Symptoms:**
-
-- Tooltip takes long to appear or is laggy
-
-**Solutions:**
-
-1. Check for too many API calls
-2. Verify caching is working
-3. Check for performance issues in console
-4. Reduce hover delay if needed
-5. Optimize note rendering
-
-### Getting Help
-
-If you're still experiencing issues:
+If tooltips still don't appear:
 
 1. **Check Console Logs**
 
-   - Open DevTools Console
-   - Look for error messages
-   - Copy error messages for debugging
+   - Copy all "Monday Quick Peek" messages
+   - Copy any error messages
 
 2. **Check Network Tab**
 
-   - Verify API calls are being made
+   - Look for API calls
    - Check response status codes
-   - Inspect API responses
 
-3. **Verify Setup**
+3. **Inspect Monday.com Structure**
 
-   - API key is valid
-   - Monday.com account is active
-   - Test board has notes
-   - Extension is enabled
+   - Right-click task row → Inspect
+   - Note the actual class names
+   - Share the HTML structure
 
-4. **Test in Clean Environment**
-
-   - Disable other extensions
-   - Test in incognito mode
-   - Clear browser cache
-
-5. **Check Documentation**
-   - Review `README.md`
-   - Check `TESTING_CHECKLIST.md`
-   - Review code comments
-
----
-
-## Additional Resources
-
-- **Chrome Extension Documentation**: https://developer.chrome.com/docs/extensions/
-- **Monday.com API Documentation**: https://developer.monday.com/api-reference/docs
-- **Chrome DevTools Guide**: https://developer.chrome.com/docs/devtools/
-- **Extension Testing Best Practices**: https://developer.chrome.com/docs/extensions/mv3/testing/
-
----
-
-## Quick Reference
-
-### Keyboard Shortcuts
-
-- `F12` - Open DevTools
-- `Cmd+Option+I` (Mac) / `Ctrl+Shift+I` (Win/Linux) - Open DevTools
-- `Cmd+R` (Mac) / `Ctrl+R` (Win/Linux) - Reload page
-- `Cmd+Shift+R` (Mac) / `Ctrl+Shift+R` (Win/Linux) - Hard reload
-
-### Important URLs
-
-- `chrome://extensions` - Extension management
-- `chrome://extensions/shortcuts` - Keyboard shortcuts
-- `https://auth.monday.com/users/sign_in_new` - Monday.com API tokens
-- `https://api.monday.com/v2` - Monday.com API endpoint
-
-### File Locations
-
-- Extension folder: `monday-quick-peek/`
-- Manifest: `manifest.json`
-- Content script: `scripts/content.js`
-- Background script: `scripts/background.js`
-- Styles: `styles/content.css`
-- Icons: `icons/`
+4. **Verify Extension State**
+   - Check if extension is enabled
+   - Check for errors in `chrome://extensions`
+   - Try disabling/re-enabling extension
 
 ---
 
 **Happy Testing! 🚀**
-
-If you find bugs or have suggestions, please document them and consider contributing improvements.

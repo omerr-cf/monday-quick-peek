@@ -353,6 +353,11 @@ mark.search-highlight {
   padding: 16px 20px;
   background: var(--tooltip-bg);
   transition: all 0.2s ease;
+  min-height: 0; /* Allows flex child to shrink below content size */
+  max-height: calc(
+    var(--tooltip-max-height) - 120px
+  ); /* Account for header and search */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .tooltip-content:empty::before {

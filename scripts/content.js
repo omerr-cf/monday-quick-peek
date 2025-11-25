@@ -17,19 +17,23 @@
     hideDelay: 100, // Delay before hiding tooltip (ms)
     tooltipId: "quick-peek-tooltip",
     selectors: {
-      boardRow: '.board-row, [data-testid*="board-row"], [class*="boardRow"]',
-      taskName: '.board-row-name, [data-testid*="name"]',
+      boardRow:
+        '.pulse-component[role="list"], [id^="row-pulse-"], .board-row, [data-testid*="board-row"], [class*="boardRow"], [class*="pulse-component"]',
+      taskName:
+        '.name-cell-text, .ds-text-component-content-text, .board-row-name, [data-testid*="name"]',
     },
     tooltipOffset: 15, // Distance from cursor/element
-    zIndex: 10000, // High z-index to appear above Monday.com UI
+    zIndex: 999999, // High z-index to appear above Monday.com UI
   };
 
   // State management
   let hoverTimeout = null;
+  let hideTimeout = null;
   let currentTooltip = null;
   let currentTarget = null;
   let mutationObserver = null;
   let isInitialized = false;
+  let isMouseOverTooltip = false;
 
   // Search state
   let searchDebounceTimer = null;
@@ -102,9 +106,10 @@
       });
     } else {
       // Page already loaded, but wait a bit for Monday.com to initialize
+      // Monday.com loads content dynamically, so we wait longer
       setTimeout(() => {
         initializeExtension();
-      }, 1000);
+      }, 2000); // Increased to 2 seconds for dynamic content
     }
   }
 
@@ -117,14 +122,46 @@
     // Create tooltip element (initially hidden)
     createTooltipElement();
 
-    // Attach hover listeners to existing rows
-    attachHoverListeners();
+    // Attach hover listeners to existing rows (with retry)
+    attachHoverListenersWithRetry();
 
     // Set up MutationObserver for dynamically loaded content
     setupMutationObserver();
 
     isInitialized = true;
     console.log("Monday Quick Peek: Extension initialized successfully");
+  }
+
+  /**
+   * Attach hover listeners with retry logic for dynamically loaded content
+   */
+  function attachHoverListenersWithRetry(maxRetries = 5, delay = 1000) {
+    let attempts = 0;
+
+    const tryAttach = () => {
+      attempts++;
+      console.log(
+        `Monday Quick Peek: Attempting to attach listeners (attempt ${attempts}/${maxRetries})`
+      );
+
+      const rowsFound = attachHoverListeners();
+
+      if (rowsFound === 0 && attempts < maxRetries) {
+        console.log(
+          `Monday Quick Peek: No rows found, retrying in ${delay}ms...`
+        );
+        setTimeout(tryAttach, delay);
+      } else if (rowsFound === 0) {
+        console.warn(
+          "Monday Quick Peek: No task rows found after all retries. The page might use a different structure."
+        );
+        console.log(
+          "Monday Quick Peek: Try navigating to a board view or check the page structure."
+        );
+      }
+    };
+
+    tryAttach();
   }
 
   /**
@@ -190,14 +227,24 @@
 
   /**
    * Find all task rows and attach hover listeners
+   * @returns {number} Number of rows found
    */
   function attachHoverListeners() {
     // Find all board rows (try multiple selectors for compatibility)
     const selectors = [
+      '.pulse-component[role="list"]', // Monday.com current structure (board view)
+      '[id^="row-pulse-"]', // Row IDs starting with "row-pulse-"
+      '[class*="pulse-component"][role="list"]', // Pulse component with list role
+      '[class*="pulse-component"]', // Any element with pulse-component class
+      ".grid-pulse", // Grid pulse rows
+      '[class*="grid-pulse"]', // Grid pulse variations
       ".board-row",
       '[data-testid*="board-row"]',
+      '[data-testid*="item-row"]',
       '[class*="boardRow"]',
       '[class*="BoardRow"]',
+      '[class*="ItemRow"]',
+      "[data-item-id]", // Items with data-item-id
     ];
 
     let rows = [];
@@ -205,10 +252,13 @@
       try {
         const found = document.querySelectorAll(selector);
         if (found.length > 0) {
-          rows = Array.from(found);
-          console.log(
-            `Monday Quick Peek: Found ${rows.length} task rows using selector: ${selector}`
-          );
+          // Only add if we haven't found rows yet, or if this selector finds more
+          if (rows.length === 0 || found.length > rows.length) {
+            rows = Array.from(found);
+            console.log(
+              `Monday Quick Peek: Found ${rows.length} task rows using selector: ${selector}`
+            );
+          }
         }
       } catch (e) {
         console.warn(`Monday Quick Peek: Selector failed: ${selector}`, e);
@@ -218,12 +268,33 @@
     // Remove duplicates
     rows = [...new Set(rows)];
 
+    // Filter out rows that are too small or don't look like task rows
+    rows = rows.filter((row) => {
+      // Skip if row is too small (likely not a task row)
+      const rect = row.getBoundingClientRect();
+      if (rect.height < 20) {
+        return false;
+      }
+      // Skip if row doesn't have any text content
+      if (!row.textContent || row.textContent.trim().length < 3) {
+        return false;
+      }
+      return true;
+    });
+
     if (rows.length === 0) {
       console.warn("Monday Quick Peek: No task rows found");
-      return;
+      console.log(
+        "Monday Quick Peek: Current page structure might be different"
+      );
+      console.log(
+        "Monday Quick Peek: Try navigating to a board view or wait for content to load"
+      );
+      return 0;
     }
 
     // Attach listeners to each row
+    let attachedCount = 0;
     rows.forEach((row, index) => {
       // Skip if already has listener (check for data attribute)
       if (row.dataset.quickPeekListener === "true") {
@@ -238,15 +309,23 @@
       row.addEventListener("mouseleave", handleMouseLeave);
       row.addEventListener("mousemove", handleMouseMove);
 
+      attachedCount++;
+
       if (index < 3) {
         // Log first few for debugging
-        console.log("Monday Quick Peek: Attached listener to row", row);
+        console.log("Monday Quick Peek: Attached listener to row", {
+          id: row.id,
+          classes: row.className,
+          text: row.textContent?.substring(0, 50),
+        });
       }
     });
 
     console.log(
-      `Monday Quick Peek: Attached hover listeners to ${rows.length} task rows`
+      `Monday Quick Peek: Attached hover listeners to ${attachedCount} task rows`
     );
+
+    return attachedCount;
   }
 
   /**
@@ -290,14 +369,47 @@
       hoverTimeout = null;
     }
 
-    // Hide tooltip after delay
-    setTimeout(() => {
-      // Only hide if we're leaving the current target
-      if (currentTarget === row) {
+    // Clear any existing hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+
+    // Hide tooltip after delay, but only if mouse is not over tooltip
+    hideTimeout = setTimeout(() => {
+      // Only hide if we're leaving the current target and mouse is not over tooltip
+      if (currentTarget === row && !isMouseOverTooltip) {
         console.log("Monday Quick Peek: Mouse left task row, hiding tooltip");
         hideTooltip();
       }
-    }, CONFIG.hideDelay);
+    }, CONFIG.hideDelay || 200);
+  }
+
+  /**
+   * Handle mouse enter event on tooltip
+   */
+  function handleTooltipMouseEnter() {
+    isMouseOverTooltip = true;
+    // Clear any pending hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+    console.log("Monday Quick Peek: Mouse entered tooltip");
+  }
+
+  /**
+   * Handle mouse leave event on tooltip
+   */
+  function handleTooltipMouseLeave() {
+    isMouseOverTooltip = false;
+    // Hide tooltip after delay when leaving tooltip
+    hideTimeout = setTimeout(() => {
+      if (!isMouseOverTooltip) {
+        console.log("Monday Quick Peek: Mouse left tooltip, hiding tooltip");
+        hideTooltip();
+      }
+    }, CONFIG.hideDelay || 200);
   }
 
   /**
@@ -347,24 +459,46 @@
     try {
       // Try to fetch real data from API
       const itemId = getTaskId(row);
+      let notesData = null;
+
       if (itemId) {
         const response = await fetchContentFromAPI(itemId, "note");
         if (response && response.success && response.data) {
-          const content = formatMockContent(taskName, response.data, "");
-          tooltip.innerHTML = content;
+          // Successfully fetched real data
+          notesData = response.data;
+        } else if (response === null) {
+          // Extension context invalidated or connection lost - use mock data silently
+          console.log(
+            "Monday Quick Peek: Using mock data (extension context issue)"
+          );
+          notesData = mockNotes;
         } else if (response && !response.success) {
           // Handle API error
           throw new Error(response.error || "Failed to fetch content");
         } else {
           // Fallback to mock data
-          const content = formatMockContent(taskName, mockNotes, "");
-          tooltip.innerHTML = content;
+          notesData = mockNotes;
         }
       } else {
         // No item ID, use mock data
-        const content = formatMockContent(taskName, mockNotes, "");
-        tooltip.innerHTML = content;
+        notesData = mockNotes;
       }
+
+      // Check if there are any notes - if not, don't show tooltip
+      const notes = notesData?.notes || [];
+      if (notes.length === 0) {
+        console.log("Monday Quick Peek: No notes found, hiding tooltip");
+        hideTooltip();
+        return;
+      }
+
+      // Format and display content
+      const content = formatMockContent(taskName, notesData, "");
+      tooltip.innerHTML = content;
+
+      // Attach tooltip mouse events to keep it visible when hovering over it
+      tooltip.addEventListener("mouseenter", handleTooltipMouseEnter);
+      tooltip.addEventListener("mouseleave", handleTooltipMouseLeave);
 
       // Position tooltip again after content is loaded
       positionTooltip(tooltip, row, event);
@@ -409,6 +543,29 @@
    * @returns {string|null} Task ID or null
    */
   function getTaskId(row) {
+    // Monday.com row IDs are like: row-pulse-currentBoard-5088029457-2536250444-notplaceholder
+    // The item ID is typically the last number before "notplaceholder"
+    if (row.id && row.id.startsWith("row-pulse-")) {
+      // Extract ID from format: row-pulse-currentBoard-5088029457-2536250444-notplaceholder
+      const parts = row.id.split("-");
+      // Find the item ID (usually the second-to-last number before "notplaceholder")
+      for (let i = parts.length - 1; i >= 0; i--) {
+        if (parts[i] === "notplaceholder" && i > 0) {
+          // The item ID is the previous part
+          const itemId = parts[i - 1];
+          if (/^\d+$/.test(itemId)) {
+            return itemId;
+          }
+        }
+      }
+      // Fallback: extract all numbers and take the last one (item ID)
+      const numbers = row.id.match(/\d+/g);
+      if (numbers && numbers.length > 0) {
+        // Usually the last number is the item ID
+        return numbers[numbers.length - 1];
+      }
+    }
+
     // Try to extract task ID from various attributes
     const idSelectors = [
       "[data-item-id]",
@@ -446,7 +603,17 @@
       searchDebounceTimer = null;
     }
 
+    // Clear hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+
     if (currentTooltip) {
+      // Remove event listeners
+      currentTooltip.removeEventListener("mouseenter", handleTooltipMouseEnter);
+      currentTooltip.removeEventListener("mouseleave", handleTooltipMouseLeave);
+
       currentTooltip.style.display = "none";
       currentTooltip.innerHTML = "";
       currentTooltip = null;
@@ -456,6 +623,7 @@
     // Reset search state
     currentSearchTerm = "";
     currentTarget = null;
+    isMouseOverTooltip = false;
   }
 
   /**
@@ -464,8 +632,11 @@
    * @returns {string} Task name
    */
   function getTaskName(row) {
-    // Try multiple selectors to find task name
+    // Try multiple selectors to find task name (Monday.com current structure)
     const nameSelectors = [
+      ".name-cell-text", // Monday.com current structure
+      ".ds-text-component-content-text", // Text content in name cell
+      '[id^="name-cell-"] .ds-text-component-content-text', // Name cell by ID
       ".board-row-name",
       '[data-testid*="name"]',
       ".item-name",
@@ -476,7 +647,19 @@
     for (const selector of nameSelectors) {
       const element = row.querySelector(selector);
       if (element) {
-        return element.textContent?.trim() || "Untitled Task";
+        const text = element.textContent?.trim();
+        if (text && text.length > 0) {
+          return text;
+        }
+      }
+    }
+
+    // Fallback: look for name cell by ID pattern
+    const nameCell = row.querySelector('[id^="name-cell-"]');
+    if (nameCell) {
+      const text = nameCell.textContent?.trim();
+      if (text && text.length > 0) {
+        return text;
       }
     }
 
@@ -682,6 +865,11 @@
   function updateTooltipContent(searchTerm = "") {
     if (!currentTooltip) return;
 
+    // Preserve input element and cursor position
+    const searchInput = currentTooltip.querySelector(".search-input");
+    const cursorPosition = searchInput ? searchInput.selectionStart : null;
+    const wasFocused = searchInput === document.activeElement;
+
     const taskName =
       currentTooltip.querySelector(".tooltip-task-name")?.textContent || "Task";
     const mockData = { notes: currentNotes || [] };
@@ -691,17 +879,120 @@
     const contentArea = currentTooltip.querySelector(".tooltip-content");
     const scrollTop = contentArea ? contentArea.scrollTop : 0;
 
-    // Update content
-    currentTooltip.innerHTML = newContent;
+    // Update only the content area, not the entire tooltip (preserves search input)
+    const contentWrapper = currentTooltip.querySelector(".tooltip-content");
+    if (contentWrapper) {
+      // Only update the notes list, not the entire content
+      const notesContainer = contentWrapper.querySelector(".tooltip-notes");
+      const emptyState = contentWrapper.querySelector(".search-empty-state");
+      const resultsCount = contentWrapper.querySelector(
+        ".search-results-count"
+      );
 
-    // Restore scroll position
-    const newContentArea = currentTooltip.querySelector(".tooltip-content");
-    if (newContentArea) {
-      newContentArea.scrollTop = scrollTop;
+      // Remove old content
+      if (notesContainer) notesContainer.remove();
+      if (emptyState) emptyState.remove();
+      if (resultsCount) resultsCount.remove();
+
+      // Get filtered notes
+      const notesToDisplay = searchTerm
+        ? filterNotes(searchTerm, currentNotes || [])
+        : currentNotes || [];
+      const totalNotes = (currentNotes || []).length;
+      const filteredCount = notesToDisplay.length;
+
+      // Add results count if searching
+      if (searchTerm && totalNotes > 0) {
+        const countDiv = document.createElement("div");
+        countDiv.className = "search-results-count";
+        countDiv.textContent = `${filteredCount} of ${totalNotes} note${
+          totalNotes !== 1 ? "s" : ""
+        }`;
+        contentWrapper.insertBefore(countDiv, contentWrapper.firstChild);
+      }
+
+      // Add notes or empty state
+      if (notesToDisplay.length > 0) {
+        const notesDiv = document.createElement("div");
+        notesDiv.className = "tooltip-notes";
+
+        notesToDisplay.forEach((note) => {
+          const relativeTime = formatRelativeTime(note.createdAt);
+          const date = new Date(note.createdAt).toLocaleDateString();
+          const timestamp = relativeTime || date;
+
+          const highlightedContent = highlightMatches(note.content, searchTerm);
+          const highlightedAuthor = highlightMatches(note.author, searchTerm);
+          const highlightedTimestamp = highlightMatches(timestamp, searchTerm);
+
+          const noteDiv = document.createElement("div");
+          noteDiv.className = "tooltip-note note-item";
+          noteDiv.innerHTML = `
+            <div class="tooltip-note-header">
+              <span class="tooltip-author note-author">
+                ${
+                  note.authorPhoto
+                    ? `<img src="${escapeHtml(
+                        note.authorPhoto
+                      )}" alt="${escapeHtml(note.author)}" />`
+                    : ""
+                }
+                <span class="author-name">${highlightedAuthor}</span>
+              </span>
+              <span class="tooltip-timestamp note-time">${highlightedTimestamp}</span>
+            </div>
+            <div class="tooltip-body note-body">${highlightedContent}</div>
+          `;
+          notesDiv.appendChild(noteDiv);
+        });
+
+        contentWrapper.appendChild(notesDiv);
+      } else {
+        // Empty state
+        const emptyDiv = document.createElement("div");
+        emptyDiv.className = "search-empty-state";
+        if (searchTerm) {
+          emptyDiv.innerHTML = `
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">No notes found</div>
+            <div class="empty-state-message">Try a different search term</div>
+          `;
+        } else if (totalNotes === 0) {
+          emptyDiv.innerHTML = `
+            <div class="empty-state-icon">📝</div>
+            <div class="empty-state-title">No notes available</div>
+            <div class="empty-state-message">This task has no notes yet</div>
+          `;
+        }
+        if (emptyDiv.innerHTML) {
+          contentWrapper.appendChild(emptyDiv);
+        }
+      }
+
+      // Restore scroll position
+      contentWrapper.scrollTop = scrollTop;
+    } else {
+      // Fallback: update entire content if structure changed
+      currentTooltip.innerHTML = newContent;
+      attachSearchListeners();
     }
 
-    // Re-attach search event listeners
-    attachSearchListeners();
+    // Restore input focus and cursor position
+    if (wasFocused && searchInput) {
+      const newSearchInput = currentTooltip.querySelector(".search-input");
+      if (newSearchInput) {
+        newSearchInput.focus();
+        if (
+          cursorPosition !== null &&
+          cursorPosition <= newSearchInput.value.length
+        ) {
+          newSearchInput.setSelectionRange(cursorPosition, cursorPosition);
+        }
+      }
+    }
+
+    // Update clear button visibility
+    updateClearButton(searchTerm);
   }
 
   /**
@@ -909,6 +1200,16 @@
     );
 
     return new Promise((resolve, reject) => {
+      // Check if extension context is still valid
+      if (!chrome.runtime?.id) {
+        console.warn(
+          "Monday Quick Peek: Extension context invalidated, using mock data"
+        );
+        // Return null to trigger mock data fallback
+        resolve(null);
+        return;
+      }
+
       chrome.runtime.sendMessage(
         {
           action: "fetchNotes",
@@ -917,7 +1218,23 @@
         },
         (response) => {
           if (chrome.runtime.lastError) {
-            const error = new Error(chrome.runtime.lastError.message);
+            const errorMessage = chrome.runtime.lastError.message;
+
+            // Handle "Extension context invalidated" gracefully
+            if (
+              errorMessage.includes("Extension context invalidated") ||
+              errorMessage.includes("message port closed") ||
+              errorMessage.includes("Could not establish connection")
+            ) {
+              console.warn(
+                "Monday Quick Peek: Extension context invalidated, using mock data"
+              );
+              // Return null to trigger mock data fallback instead of error
+              resolve(null);
+              return;
+            }
+
+            const error = new Error(errorMessage);
             error.code = "NETWORK_ERROR";
 
             // Use error handler if available
