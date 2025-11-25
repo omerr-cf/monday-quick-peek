@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Icon Preview - Monday Quick Peek</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 40px 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        color: #6366f1;
+        margin-bottom: 10px;
+        font-size: 32px;
+      }
+
+      .subtitle {
+        color: #676879;
+        margin-bottom: 40px;
+        font-size: 16px;
+      }
+
+      .icon-section {
+        margin-bottom: 60px;
+      }
+
+      .icon-section h2 {
+        color: #323338;
+        margin-bottom: 20px;
+        font-size: 24px;
+        border-bottom: 2px solid #e1e4e8;
+        padding-bottom: 10px;
+      }
+
+      .icon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 30px;
+        margin-top: 30px;
+      }
+
+      .icon-item {
+        text-align: center;
+        padding: 20px;
+        background: #f9fafb;
+        border-radius: 12px;
+        border: 2px solid #e1e4e8;
+        transition: all 0.3s ease;
+      }
+
+      .icon-item:hover {
+        border-color: #6366f1;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+      }
+
+      .icon-item img {
+        display: block;
+        margin: 0 auto 15px;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        background: white;
+        padding: 10px;
+      }
+
+      .icon-item .size {
+        font-weight: 600;
+        color: #6366f1;
+        margin-bottom: 5px;
+      }
+
+      .icon-item .usage {
+        font-size: 12px;
+        color: #676879;
+      }
+
+      .svg-preview {
+        background: repeating-linear-gradient(
+          45deg,
+          #f0f0f0 0px,
+          #f0f0f0 10px,
+          #ffffff 10px,
+          #ffffff 20px
+        );
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+
+      .svg-preview svg {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .info-box {
+        background: #dbeafe;
+        border-left: 4px solid #3b82f6;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 30px 0;
+      }
+
+      .info-box h3 {
+        color: #1e40af;
+        margin-bottom: 10px;
+      }
+
+      .info-box p {
+        color: #1e3a8a;
+        line-height: 1.6;
+      }
+
+      .info-box code {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Monaco", monospace;
+        font-size: 14px;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+      }
+
+      .status.ready {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .status.pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧠 Monday Quick Peek - Icon Preview</h1>
+      <p class="subtitle">
+        Preview and verify extension icons before generating PNGs
+      </p>
+
+      <div class="info-box">
+        <h3>📋 Next Steps</h3>
+        <p>
+          SVG icons are ready! To generate PNG icons, run one of the generation
+          scripts:
+        </p>
+        <ul style="margin-top: 10px; margin-left: 20px; color: #1e3a8a">
+          <li>
+            <code>./generate-icons.sh</code> (macOS/Linux - requires ImageMagick
+            or Inkscape)
+          </li>
+          <li>
+            <code>generate-icons.bat</code> (Windows - requires ImageMagick)
+          </li>
+          <li>
+            <code>node generate-icons.js</code> (Node.js - requires sharp
+            package)
+          </li>
+        </ul>
+        <p style="margin-top: 10px">
+          See <code>ICONS_README.md</code> for detailed instructions.
+        </p>
+      </div>
+
+      <div class="icon-section">
+        <h2>SVG Source Icons</h2>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+          "
+        >
+          <div>
+            <h3 style="margin-bottom: 15px; color: #323338">
+              Full Detail Version
+            </h3>
+            <div class="svg-preview">
+              <img
+                src="icon.svg"
+                alt="Full detail icon"
+                style="width: 128px; height: 128px"
+              />
+            </div>
+            <p
+              style="
+                text-align: center;
+                color: #676879;
+                font-size: 14px;
+                margin-top: 10px;
+              "
+            >
+              Best for large sizes (128x128px)
+            </p>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 15px; color: #323338">
+              Simplified Version <span class="status ready">Recommended</span>
+            </h3>
+            <div class="svg-preview">
+              <img
+                src="icon-simple.svg"
+                alt="Simplified icon"
+                style="width: 128px; height: 128px"
+              />
+            </div>
+            <p
+              style="
+                text-align: center;
+                color: #676879;
+                font-size: 14px;
+                margin-top: 10px;
+              "
+            >
+              Optimized for small sizes (16x16px)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-section">
+        <h2>Required PNG Icon Sizes</h2>
+        <p style="color: #676879; margin-bottom: 20px">
+          These PNG files need to be generated and placed in the
+          <code>icons/</code> directory:
+        </p>
+
+        <div class="icon-grid">
+          <div class="icon-item">
+            <div
+              style="
+                width: 16px;
+                height: 16px;
+                margin: 0 auto 15px;
+                background: #6366f1;
+                border-radius: 2px;
+                border: 1px solid #e1e4e8;
+              "
+            ></div>
+            <div class="size">16x16px</div>
+            <div class="usage">Toolbar icon</div>
+            <div style="margin-top: 10px; font-size: 11px; color: #9ca3af">
+              icons/icon16.png
+            </div>
+          </div>
+
+          <div class="icon-item">
+            <div
+              style="
+                width: 48px;
+                height: 48px;
+                margin: 0 auto 15px;
+                background: #6366f1;
+                border-radius: 4px;
+                border: 1px solid #e1e4e8;
+              "
+            ></div>
+            <div class="size">48x48px</div>
+            <div class="usage">Extension management</div>
+            <div style="margin-top: 10px; font-size: 11px; color: #9ca3af">
+              icons/icon48.png
+            </div>
+          </div>
+
+          <div class="icon-item">
+            <div
+              style="
+                width: 128px;
+                height: 128px;
+                margin: 0 auto 15px;
+                background: #6366f1;
+                border-radius: 8px;
+                border: 1px solid #e1e4e8;
+              "
+            ></div>
+            <div class="size">128x128px</div>
+            <div class="usage">Chrome Web Store</div>
+            <div style="margin-top: 10px; font-size: 11px; color: #9ca3af">
+              icons/icon128.png
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 30px;
+            padding: 15px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+          "
+        >
+          <strong style="color: #92400e">Note:</strong>
+          <span style="color: #78350f">
+            PNG icons will appear here once generated. Currently showing
+            placeholders.
+          </span>
+        </div>
+      </div>
+
+      <div class="icon-section">
+        <h2>Icon Design Details</h2>
+        <ul style="line-height: 2; color: #323338; margin-left: 20px">
+          <li><strong>Concept:</strong> Eye (peek/view) + Document preview</li>
+          <li><strong>Colors:</strong> Purple gradient (#6366f1 to #8b5cf6)</li>
+          <li><strong>Style:</strong> Flat design with subtle gradients</li>
+          <li><strong>Background:</strong> Transparent</li>
+          <li>
+            <strong>Optimization:</strong> Simplified version for small sizes
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

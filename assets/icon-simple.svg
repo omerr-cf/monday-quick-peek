@@ -1,0 +1,25 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified icon optimized for small sizes -->
+  <defs>
+    <linearGradient id="simpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square background -->
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#simpleGradient)"/>
+  
+  <!-- Eye shape (simplified) -->
+  <ellipse cx="64" cy="52" rx="24" ry="18" fill="#ffffff" opacity="0.95"/>
+  <circle cx="64" cy="52" r="10" fill="#6366f1"/>
+  <circle cx="68" cy="48" r="5" fill="#1e1e1e"/>
+  <circle cx="70" cy="46" r="2" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Document preview (simplified lines) -->
+  <rect x="36" y="78" width="56" height="32" rx="3" fill="#ffffff" opacity="0.9"/>
+  <line x1="44" y1="88" x2="84" y2="88" stroke="#e1e4e8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="44" y1="96" x2="72" y2="96" stroke="#e1e4e8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="44" y1="104" x2="76" y2="104" stroke="#e1e4e8" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
