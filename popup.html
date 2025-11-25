@@ -19,268 +19,389 @@
         background: #ffffff;
         width: 400px;
         min-height: 300px;
+      }
+
+      .popup-container {
         padding: 20px;
       }
 
-      .header {
+      /* Header */
+      header {
         margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #e1e4e8;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f3f4f6;
       }
 
-      .header h1 {
-        font-size: 20px;
-        font-weight: 600;
+      header h2 {
+        font-size: 22px;
+        font-weight: 700;
         color: #323338;
-        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
-      .header p {
+      /* Status Indicator */
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
         font-size: 13px;
-        color: #676879;
+        font-weight: 500;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
       }
 
-      .section {
-        margin-bottom: 24px;
+      .status-indicator.connected {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
       }
 
-      .section-title {
-        font-size: 16px;
+      .status-indicator.not-connected {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .status-indicator.testing {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 2s infinite;
+      }
+
+      .status-indicator.connected .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+
+      .status-indicator.not-connected .status-dot {
+        background: #ef4444;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+
+      .status-indicator.testing .status-dot {
+        background: #3b82f6;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* API Key Section */
+      .api-key-section {
+        margin-bottom: 20px;
+      }
+
+      .api-key-section label {
+        display: block;
+        font-size: 13px;
         font-weight: 600;
         color: #323338;
+        margin-bottom: 8px;
+      }
+
+      .api-key-input-wrapper {
+        position: relative;
         margin-bottom: 12px;
       }
 
-      .form-group {
-        margin-bottom: 16px;
-      }
-
-      .form-label {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        color: #323338;
-        margin-bottom: 6px;
-      }
-
-      .form-label .required {
-        color: #ff5555;
-        margin-left: 2px;
-      }
-
-      .form-input {
+      .api-key-input-wrapper input {
         width: 100%;
-        padding: 10px 12px;
+        padding: 12px 16px;
+        padding-right: 40px;
         font-size: 14px;
         font-family: inherit;
         color: #323338;
         background: #ffffff;
-        border: 1px solid #e1e4e8;
-        border-radius: 6px;
-        transition: border-color 0.2s, box-shadow 0.2s;
-      }
-
-      .form-input:focus {
+        border: 2px solid #e1e4e8;
+        border-radius: 8px;
+        transition: all 0.2s ease;
         outline: none;
-        border-color: #0073ea;
-        box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.1);
       }
 
-      .form-input::placeholder {
-        color: #b3b5b8;
+      .api-key-input-wrapper input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
       }
 
-      .form-help {
+      .api-key-input-wrapper input::placeholder {
+        color: #9ca3af;
+      }
+
+      .toggle-password {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #676879;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s ease;
+      }
+
+      .toggle-password:hover {
+        color: #6366f1;
+      }
+
+      .save-button {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+      }
+
+      .save-button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+      }
+
+      .save-button:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .save-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .save-button .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .save-button .checkmark {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: checkmarkPop 0.3s ease;
+      }
+
+      @keyframes checkmarkPop {
+        0% {
+          transform: scale(0);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* Help Text */
+      .help-text {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #f3f4f6;
         font-size: 12px;
         color: #676879;
-        margin-top: 6px;
-        line-height: 1.4;
+        line-height: 1.6;
       }
 
-      .form-help a {
-        color: #0073ea;
+      .help-text a {
+        color: #6366f1;
         text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s ease;
       }
 
-      .form-help a:hover {
+      .help-text a:hover {
+        color: #8b5cf6;
         text-decoration: underline;
       }
 
-      .button-group {
-        display: flex;
-        gap: 8px;
-        margin-top: 16px;
+      .help-text a::after {
+        content: "→";
+        transition: transform 0.2s ease;
       }
 
-      .button {
-        padding: 10px 16px;
-        font-size: 14px;
-        font-weight: 500;
-        font-family: inherit;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: background-color 0.2s, transform 0.1s;
-        flex: 1;
+      .help-text a:hover::after {
+        transform: translateX(2px);
       }
 
-      .button:active {
-        transform: scale(0.98);
-      }
-
-      .button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      .button-primary {
-        background: #0073ea;
-        color: #ffffff;
-      }
-
-      .button-primary:hover:not(:disabled) {
-        background: #0051a8;
-      }
-
-      .button-secondary {
-        background: #f5f6f8;
-        color: #323338;
-      }
-
-      .button-secondary:hover:not(:disabled) {
-        background: #e1e4e8;
-      }
-
+      /* Status Message */
       .status-message {
-        padding: 10px 12px;
-        border-radius: 6px;
-        font-size: 13px;
         margin-top: 12px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.5;
         display: none;
+        animation: slideDown 0.3s ease;
       }
 
-      .status-message:not(:empty) {
+      .status-message.show {
         display: block;
       }
 
-      .status-success {
-        background: #e8f5e9;
-        color: #2e7d32;
-        border: 1px solid #c8e6c9;
+      .status-message.success {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
       }
 
-      .status-error {
-        background: #ffebee;
-        color: #c62828;
-        border: 1px solid #ffcdd2;
+      .status-message.error {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
       }
 
-      .status-info {
-        background: #e3f2fd;
-        color: #1565c0;
-        border: 1px solid #bbdefb;
+      .status-message.info {
+        background: #dbeafe;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
       }
 
-      .status-indicator {
-        display: inline-flex;
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Loading overlay */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: none;
         align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        padding: 6px 10px;
-        border-radius: 4px;
-        margin-top: 8px;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
       }
 
-      .status-success {
-        background: #e8f5e9;
-        color: #2e7d32;
+      .loading-overlay.show {
+        display: flex;
       }
 
-      .status-warning {
-        background: #fff3e0;
-        color: #e65100;
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e1e4e8;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
       }
-
-      .footer {
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid #e1e4e8;
-        font-size: 12px;
-        color: #676879;
-        text-align: center;
-      }
-
-      .footer a {
-        color: #0073ea;
-        text-decoration: none;
-      }
-
-      .footer a:hover {
-        text-decoration: underline;
-      }
-
-      /* TODO: Add preferences section */
-      /* TODO: Add hover delay slider */
-      /* TODO: Add theme toggle */
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>Monday Quick Peek</h1>
-      <p>Configure your extension settings</p>
-    </div>
+    <div class="popup-container">
+      <header>
+        <h2>🧠 Monday Quick Peek</h2>
+      </header>
 
-    <div class="section">
-      <h2 class="section-title">API Configuration</h2>
+      <div id="statusIndicator" class="status-indicator not-connected">
+        <span class="status-dot"></span>
+        <span class="status-text">Not Connected</span>
+      </div>
 
-      <div class="form-group">
-        <label for="api-key-input" class="form-label">
-          Monday.com API Key
-          <span class="required">*</span>
-        </label>
-        <input
-          type="password"
-          id="api-key-input"
-          class="form-input"
-          placeholder="Enter your Monday.com API key"
-          autocomplete="off"
-        />
-        <div class="form-help">
-          Get your API key from
-          <a href="https://auth.monday.com/users/sign_in_new" target="_blank"
-            >Monday.com Developer Settings</a
+      <div class="api-key-section">
+        <label for="apiKey">Monday.com API Key:</label>
+        <div class="api-key-input-wrapper">
+          <input
+            type="password"
+            id="apiKey"
+            placeholder="Enter your API key"
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            id="togglePassword"
+            aria-label="Show/hide password"
           >
+            👁️
+          </button>
         </div>
-        <div id="api-key-status" class="status-indicator status-warning">
-          ⚠ API Key Not Set
-        </div>
-      </div>
-
-      <div class="button-group">
-        <button id="test-button" class="button button-secondary">
-          Test Connection
-        </button>
-        <button id="save-button" class="button button-primary">
-          Save API Key
+        <button id="saveBtn" class="save-button">
+          <span class="button-text">Save & Test</span>
         </button>
       </div>
 
-      <div id="status-message" class="status-message"></div>
+      <div class="status-message" id="statusMessage"></div>
+
+      <div class="help-text">
+        <p>
+          Get your API key from your Monday.com account settings. You'll need
+          developer access to generate a token.
+        </p>
+        <a
+          href="https://auth.monday.com/users/sign_in_new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          How to get your API key
+        </a>
+      </div>
     </div>
 
-    <!-- TODO: Add Preferences section -->
-    <!-- TODO: Add About section -->
-    <!-- TODO: Add version info -->
-
-    <div class="footer">
-      <p>
-        Need help?
-        <a
-          href="https://github.com/yourusername/monday-quick-peek"
-          target="_blank"
-          >View Documentation</a
-        >
-      </p>
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
     </div>
 
     <script src="scripts/popup.js"></script>

@@ -1,19 +1,20 @@
 /**
  * Popup Script for Monday Quick Peek Extension
  *
- * This script handles:
- * - Settings page UI logic
- * - API key management (save/load/validate)
- * - Connection testing
- * - User preferences
+ * Handles settings page UI, API key management, and connection testing
  */
 
-// DOM elements (will be populated on load)
+// DOM elements
 let apiKeyInput = null;
 let saveButton = null;
-let testButton = null;
+let statusIndicator = null;
 let statusMessage = null;
-let apiKeyStatus = null;
+let togglePasswordBtn = null;
+let loadingOverlay = null;
+
+// State
+let isTesting = false;
+let originalButtonText = "";
 
 /**
  * Initialize popup when DOM is ready
@@ -30,35 +31,33 @@ document.addEventListener("DOMContentLoaded", () => {
  * Initialize DOM element references
  */
 function initializeElements() {
-  apiKeyInput = document.getElementById("api-key-input");
-  saveButton = document.getElementById("save-button");
-  testButton = document.getElementById("test-button");
-  statusMessage = document.getElementById("status-message");
-  apiKeyStatus = document.getElementById("api-key-status");
+  apiKeyInput = document.getElementById("apiKey");
+  saveButton = document.getElementById("saveBtn");
+  statusIndicator = document.getElementById("statusIndicator");
+  statusMessage = document.getElementById("statusMessage");
+  togglePasswordBtn = document.getElementById("togglePassword");
+  loadingOverlay = document.getElementById("loadingOverlay");
 
-  // TODO: Initialize other UI elements
-  // TODO: Add toggle switches for preferences
-  // TODO: Add hover delay slider
+  if (saveButton) {
+    originalButtonText =
+      saveButton.querySelector(".button-text")?.textContent || "Save & Test";
+  }
 }
 
 /**
- * Load settings from storage
+ * Load settings from Chrome storage
  */
 async function loadSettings() {
   try {
-    // Load API key
-    const result = await chrome.storage.sync.get(["apiKey", "settings"]);
+    const result = await chrome.storage.sync.get(["apiKey", "apiKeyValid"]);
 
     if (result.apiKey) {
       apiKeyInput.value = result.apiKey;
-      updateApiKeyStatus(true);
+      updateConnectionStatus(
+        result.apiKeyValid === true ? "connected" : "not-connected"
+      );
     } else {
-      updateApiKeyStatus(false);
-    }
-
-    // TODO: Load other settings (hover delay, theme, etc.)
-    if (result.settings) {
-      // Apply settings to UI
+      updateConnectionStatus("not-connected");
     }
   } catch (error) {
     console.error("Popup: Error loading settings", error);
@@ -70,107 +69,188 @@ async function loadSettings() {
  * Attach event listeners
  */
 function attachEventListeners() {
+  // Save button click
   if (saveButton) {
-    saveButton.addEventListener("click", handleSaveApiKey);
+    saveButton.addEventListener("click", handleSaveAndTest);
   }
 
-  if (testButton) {
-    testButton.addEventListener("click", handleTestConnection);
-  }
-
-  // TODO: Add listeners for other settings
-  // TODO: Add input validation on keyup
-  // TODO: Add keyboard shortcuts
-
-  // Auto-save on Enter key
+  // Enter key to save
   if (apiKeyInput) {
     apiKeyInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        handleSaveApiKey();
+      if (e.key === "Enter" && !isTesting) {
+        handleSaveAndTest();
       }
     });
+
+    // Update status on input change
+    apiKeyInput.addEventListener("input", () => {
+      if (statusMessage.classList.contains("show")) {
+        hideStatus();
+      }
+    });
+  }
+
+  // Toggle password visibility
+  if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener("click", togglePasswordVisibility);
   }
 }
 
 /**
- * Handle save API key button click
+ * Handle save and test button click
  */
-async function handleSaveApiKey() {
+async function handleSaveAndTest() {
   const apiKey = apiKeyInput?.value?.trim();
 
   if (!apiKey) {
     showStatus("Please enter an API key", "error");
+    apiKeyInput?.focus();
     return;
   }
 
-  // Validate format (basic check)
+  // Basic format validation
   if (!isValidApiKeyFormat(apiKey)) {
-    showStatus("Invalid API key format", "error");
+    showStatus(
+      "Invalid API key format. API keys should be at least 20 characters long.",
+      "error"
+    );
     return;
   }
 
-  // Show loading state
-  setButtonLoading(saveButton, true);
-  showStatus("Saving...", "info");
+  // Prevent multiple simultaneous requests
+  if (isTesting) {
+    return;
+  }
+
+  isTesting = true;
+  setButtonLoading(true);
+  updateConnectionStatus("testing");
+  showStatus("Testing connection...", "info");
 
   try {
-    // Send to background script
-    const response = await sendMessage({
-      action: "saveApiKey",
-      apiKey: apiKey,
-    });
+    // Test API key by making a request to Monday.com API
+    const isValid = await testApiKey(apiKey);
 
-    if (response.success) {
-      showStatus("API key saved successfully!", "success");
-      updateApiKeyStatus(true);
+    if (isValid) {
+      // Save to Chrome storage
+      await chrome.storage.sync.set({
+        apiKey: apiKey,
+        apiKeyValid: true,
+      });
 
-      // TODO: Auto-test connection after saving
+      showStatus("✓ API key saved and validated successfully!", "success");
+      updateConnectionStatus("connected");
+      setButtonSuccess();
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        hideStatus();
+        setButtonNormal();
+      }, 3000);
     } else {
-      showStatus(response.error || "Failed to save API key", "error");
+      showStatus(
+        "Invalid API key. Please check your key and try again.",
+        "error"
+      );
+      updateConnectionStatus("not-connected");
+      setButtonNormal();
     }
   } catch (error) {
-    console.error("Popup: Error saving API key", error);
-    showStatus("Error saving API key: " + error.message, "error");
+    console.error("Popup: Error testing API key", error);
+    handleApiError(error);
+    updateConnectionStatus("not-connected");
+    setButtonNormal();
   } finally {
-    setButtonLoading(saveButton, false);
+    isTesting = false;
+    setButtonLoading(false);
   }
 }
 
 /**
- * Handle test connection button click
+ * Test API key by making a request to Monday.com API
+ * @param {string} apiKey - API key to test
+ * @returns {Promise<boolean>} True if API key is valid
  */
-async function handleTestConnection() {
-  const apiKey = apiKeyInput?.value?.trim();
-
-  if (!apiKey) {
-    showStatus("Please enter an API key first", "error");
-    return;
-  }
-
-  // Show loading state
-  setButtonLoading(testButton, true);
-  showStatus("Testing connection...", "info");
-
+async function testApiKey(apiKey) {
   try {
-    const response = await sendMessage({
-      action: "testApiConnection",
-      apiKey: apiKey,
+    // Monday.com API endpoint to test authentication
+    const response = await fetch("https://api.monday.com/v2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: apiKey,
+        "API-Version": "2023-10",
+      },
+      body: JSON.stringify({
+        query: `
+          query {
+            me {
+              id
+              name
+              email
+            }
+          }
+        `,
+      }),
     });
 
-    if (response.success) {
-      const userName = response.user?.name || "Unknown";
-      showStatus(`Connection successful! Connected as ${userName}`, "success");
-      updateApiKeyStatus(true);
-    } else {
-      showStatus(response.error || "Connection failed", "error");
-      updateApiKeyStatus(false);
+    if (!response.ok) {
+      // Handle different HTTP status codes
+      if (response.status === 401) {
+        throw new Error("Invalid API key. Authentication failed.");
+      } else if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      } else if (response.status >= 500) {
+        throw new Error(
+          "Monday.com API is temporarily unavailable. Please try again later."
+        );
+      } else {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
     }
+
+    const data = await response.json();
+
+    // Check for GraphQL errors
+    if (data.errors && data.errors.length > 0) {
+      const errorMessage =
+        data.errors[0].message || "API key validation failed";
+      throw new Error(errorMessage);
+    }
+
+    // Check if we got user data (means API key is valid)
+    if (data.data && data.data.me) {
+      console.log("Popup: API key validated successfully", data.data.me);
+      return true;
+    }
+
+    return false;
   } catch (error) {
-    console.error("Popup: Error testing connection", error);
-    showStatus("Error testing connection: " + error.message, "error");
-  } finally {
-    setButtonLoading(testButton, false);
+    // Re-throw with more context
+    if (
+      error.message.includes("Failed to fetch") ||
+      error.message.includes("NetworkError")
+    ) {
+      throw new Error("Network error. Please check your internet connection.");
+    }
+    throw error;
   }
+}
+
+/**
+ * Handle API errors gracefully
+ * @param {Error} error - Error object
+ */
+function handleApiError(error) {
+  let errorMessage = "An error occurred while testing the API key.";
+
+  if (error.message) {
+    errorMessage = error.message;
+  } else if (error.name === "TypeError" && error.message.includes("fetch")) {
+    errorMessage = "Network error. Please check your internet connection.";
+  }
+
+  showStatus(errorMessage, "error");
 }
 
 /**
@@ -179,101 +259,175 @@ async function handleTestConnection() {
  * @returns {boolean} True if format is valid
  */
 function isValidApiKeyFormat(apiKey) {
-  // TODO: Add more sophisticated validation
   // Monday.com API keys are typically long alphanumeric strings
-  return apiKey.length > 10;
+  // Basic validation: at least 20 characters, alphanumeric and some special chars
+  return apiKey.length >= 20 && /^[a-zA-Z0-9_-]+$/.test(apiKey);
 }
 
 /**
- * Update API key status indicator
- * @param {boolean} isSet - Whether API key is set
+ * Update connection status indicator
+ * @param {string} status - Status: "connected", "not-connected", "testing"
  */
-function updateApiKeyStatus(isSet) {
-  if (!apiKeyStatus) return;
+function updateConnectionStatus(status) {
+  if (!statusIndicator) return;
 
-  if (isSet) {
-    apiKeyStatus.textContent = "✓ API Key Configured";
-    apiKeyStatus.className = "status-indicator status-success";
-  } else {
-    apiKeyStatus.textContent = "⚠ API Key Not Set";
-    apiKeyStatus.className = "status-indicator status-warning";
+  // Remove all status classes
+  statusIndicator.classList.remove("connected", "not-connected", "testing");
+
+  // Add appropriate class
+  statusIndicator.classList.add(status);
+
+  // Update status text
+  const statusText = statusIndicator.querySelector(".status-text");
+  if (statusText) {
+    switch (status) {
+      case "connected":
+        statusText.textContent = "Connected";
+        break;
+      case "not-connected":
+        statusText.textContent = "Not Connected";
+        break;
+      case "testing":
+        statusText.textContent = "Testing...";
+        break;
+    }
   }
 }
 
 /**
  * Show status message
  * @param {string} message - Message to show
- * @param {string} type - Message type (success, error, info)
+ * @param {string} type - Message type: "success", "error", "info"
  */
 function showStatus(message, type = "info") {
   if (!statusMessage) return;
 
   statusMessage.textContent = message;
-  statusMessage.className = `status-message status-${type}`;
+  statusMessage.className = `status-message ${type} show`;
 
-  // Auto-hide after 5 seconds for success messages
-  if (type === "success") {
+  // Auto-hide info messages after 5 seconds
+  if (type === "info") {
     setTimeout(() => {
       if (statusMessage.textContent === message) {
-        statusMessage.textContent = "";
-        statusMessage.className = "status-message";
+        hideStatus();
       }
     }, 5000);
   }
 }
 
 /**
+ * Hide status message
+ */
+function hideStatus() {
+  if (statusMessage) {
+    statusMessage.classList.remove("show");
+    setTimeout(() => {
+      statusMessage.textContent = "";
+      statusMessage.className = "status-message";
+    }, 300);
+  }
+}
+
+/**
  * Set button loading state
- * @param {HTMLElement} button - Button element
  * @param {boolean} loading - Loading state
  */
-function setButtonLoading(button, loading) {
-  if (!button) return;
+function setButtonLoading(loading) {
+  if (!saveButton) return;
+
+  const buttonText = saveButton.querySelector(".button-text");
 
   if (loading) {
-    button.disabled = true;
-    button.textContent = button.textContent
-      .replace("Save", "Saving...")
-      .replace("Test", "Testing...");
+    saveButton.disabled = true;
+    if (buttonText) {
+      buttonText.textContent = "Testing...";
+    }
+    // Add spinner
+    if (!saveButton.querySelector(".spinner")) {
+      const spinner = document.createElement("div");
+      spinner.className = "spinner";
+      saveButton.insertBefore(spinner, buttonText);
+    }
   } else {
-    button.disabled = false;
-    // TODO: Restore original button text
-    if (button.id === "save-button") {
-      button.textContent = "Save API Key";
-    } else if (button.id === "test-button") {
-      button.textContent = "Test Connection";
+    saveButton.disabled = false;
+    const spinner = saveButton.querySelector(".spinner");
+    if (spinner) {
+      spinner.remove();
+    }
+    if (buttonText) {
+      buttonText.textContent = originalButtonText;
     }
   }
 }
 
 /**
- * Send message to background script
- * @param {Object} message - Message object
- * @returns {Promise<Object>} Response promise
+ * Set button success state
  */
-function sendMessage(message) {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-      } else {
-        resolve(response || {});
-      }
-    });
-  });
+function setButtonSuccess() {
+  if (!saveButton) return;
+
+  const buttonText = saveButton.querySelector(".button-text");
+  if (buttonText) {
+    buttonText.textContent = "✓ Saved!";
+  }
+
+  // Add checkmark
+  if (!saveButton.querySelector(".checkmark")) {
+    const checkmark = document.createElement("div");
+    checkmark.className = "checkmark";
+    checkmark.textContent = "✓";
+    saveButton.insertBefore(checkmark, buttonText);
+  }
+
+  saveButton.style.background =
+    "linear-gradient(135deg, #10b981 0%, #059669 100%)";
 }
 
 /**
- * Save other settings (preferences)
- * @param {Object} settings - Settings object
+ * Set button to normal state
  */
-async function saveSettings(settings) {
-  // TODO: Save user preferences (hover delay, theme, etc.)
-  try {
-    await chrome.storage.sync.set({ settings: settings });
-    showStatus("Settings saved", "success");
-  } catch (error) {
-    console.error("Popup: Error saving settings", error);
-    showStatus("Error saving settings", "error");
+function setButtonNormal() {
+  if (!saveButton) return;
+
+  const buttonText = saveButton.querySelector(".button-text");
+  if (buttonText) {
+    buttonText.textContent = originalButtonText;
+  }
+
+  const checkmark = saveButton.querySelector(".checkmark");
+  if (checkmark) {
+    checkmark.remove();
+  }
+
+  saveButton.style.background =
+    "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)";
+}
+
+/**
+ * Toggle password visibility
+ */
+function togglePasswordVisibility() {
+  if (!apiKeyInput || !togglePasswordBtn) return;
+
+  const isPassword = apiKeyInput.type === "password";
+  apiKeyInput.type = isPassword ? "text" : "password";
+  togglePasswordBtn.textContent = isPassword ? "🙈" : "👁️";
+}
+
+/**
+ * Show loading overlay
+ */
+function showLoadingOverlay() {
+  if (loadingOverlay) {
+    loadingOverlay.classList.add("show");
+  }
+}
+
+/**
+ * Hide loading overlay
+ */
+function hideLoadingOverlay() {
+  if (loadingOverlay) {
+    loadingOverlay.classList.remove("show");
   }
 }
