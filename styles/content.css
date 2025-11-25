@@ -1,234 +1,460 @@
 /**
  * Content Styles for Monday Quick Peek Extension
  * 
- * Styles for tooltips and hover previews that appear on Monday.com pages.
- * Matches Monday.com design system for seamless integration.
+ * Beautiful tooltip UI matching Monday.com design language
+ * Purple accents, clean modern design, smooth animations
  */
 
-/* CSS Variables for theming - matches Monday.com design system */
+/* CSS Variables - Monday.com design system with purple accents */
 :root {
-  /* Colors - Monday.com palette */
+  /* Purple accent colors - Monday.com style */
+  --monday-purple-primary: #6366f1;
+  --monday-purple-secondary: #8b5cf6;
+  --monday-purple-light: rgba(99, 102, 241, 0.1);
+  --monday-purple-hover: #4f46e5;
+
+  /* Base colors */
   --monday-primary: #0073ea;
   --monday-primary-hover: #0051a8;
   --monday-text-primary: #323338;
   --monday-text-secondary: #676879;
+  --monday-text-tertiary: #9ca3af;
   --monday-background: #ffffff;
   --monday-border: #e1e4e8;
+  --monday-border-light: #f3f4f6;
+  --monday-shadow-sm: rgba(0, 0, 0, 0.05);
   --monday-shadow: rgba(0, 0, 0, 0.1);
-  --monday-shadow-hover: rgba(0, 0, 0, 0.15);
-  
+  --monday-shadow-lg: rgba(0, 0, 0, 0.15);
+  --monday-shadow-xl: rgba(0, 0, 0, 0.2);
+
   /* Tooltip specific */
   --tooltip-bg: var(--monday-background);
   --tooltip-text: var(--monday-text-primary);
   --tooltip-border: var(--monday-border);
-  --tooltip-shadow: 0 4px 12px var(--monday-shadow);
-  --tooltip-shadow-hover: 0 6px 16px var(--monday-shadow-hover);
-  
+  --tooltip-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
   /* Spacing */
-  --tooltip-padding: 12px 16px;
-  --tooltip-border-radius: 8px;
-  --tooltip-max-width: 400px;
-  --tooltip-max-height: 300px;
-  
+  --tooltip-padding: 0;
+  --tooltip-border-radius: 12px;
+  --tooltip-width: 420px;
+  --tooltip-max-height: 500px;
+
   /* Typography */
   --tooltip-font-size: 14px;
   --tooltip-line-height: 1.5;
-  --tooltip-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  
+  --tooltip-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
   /* Animation */
-  --tooltip-transition: all 0.2s ease-in-out;
-  --tooltip-fade-in: fadeIn 0.2s ease-in-out;
+  --tooltip-transition: all 0.2s ease;
+  --tooltip-fade-in: tooltipFadeIn 0.2s ease;
 }
 
-/* Dark mode support (TODO: detect Monday.com theme) */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
   :root {
     --monday-text-primary: #ffffff;
     --monday-text-secondary: #b3b5b8;
+    --monday-text-tertiary: #9ca3af;
     --monday-background: #1e1e1e;
     --monday-border: #3d3d3d;
+    --monday-border-light: #2d2d2d;
     --tooltip-bg: var(--monday-background);
     --tooltip-text: var(--monday-text-primary);
     --tooltip-border: var(--monday-border);
   }
 }
 
-/* Main tooltip container */
+/* ============================================
+   MAIN TOOLTIP CONTAINER
+   ============================================ */
+
+#quick-peek-tooltip,
 .monday-quick-peek-tooltip {
-  position: absolute;
-  z-index: 10000; /* High z-index to appear above Monday.com UI */
+  position: fixed;
+  width: var(--tooltip-width);
+  max-height: var(--tooltip-max-height);
   background: var(--tooltip-bg);
-  color: var(--tooltip-text);
-  border: 1px solid var(--tooltip-border);
   border-radius: var(--tooltip-border-radius);
   box-shadow: var(--tooltip-shadow);
-  padding: var(--tooltip-padding);
-  max-width: var(--tooltip-max-width);
-  max-height: var(--tooltip-max-height);
-  overflow-y: auto;
+  z-index: 999999;
+  overflow: hidden;
   font-family: var(--tooltip-font-family);
   font-size: var(--tooltip-font-size);
   line-height: var(--tooltip-line-height);
-  word-wrap: break-word;
+  color: var(--tooltip-text);
   pointer-events: auto;
   animation: var(--tooltip-fade-in);
-  
-  /* TODO: Add arrow pointing to source element */
-  /* TODO: Add smooth positioning transitions */
-}
-
-/* Tooltip content */
-.monday-quick-peek-tooltip .tooltip-content {
-  color: var(--tooltip-text);
-}
-
-/* Tooltip header (for notes/comments with metadata) */
-.monday-quick-peek-tooltip .tooltip-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--tooltip-border);
-  font-size: 12px;
-  color: var(--monday-text-secondary);
-}
-
-/* Tooltip task name */
-.monday-quick-peek-tooltip .tooltip-task-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--monday-text-primary);
-  margin: 0;
-}
-
-/* Tooltip notes container */
-.monday-quick-peek-tooltip .tooltip-notes {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  border: 1px solid var(--tooltip-border);
+  transition: var(--tooltip-transition);
 }
 
-/* Individual note */
-.monday-quick-peek-tooltip .tooltip-note {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--tooltip-border);
+#quick-peek-tooltip:hover,
+.monday-quick-peek-tooltip:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
 }
 
-.monday-quick-peek-tooltip .tooltip-note:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
+/* ============================================
+   TOOLTIP HEADER - Gradient Background
+   ============================================ */
 
-/* Note header (author and timestamp) */
-.monday-quick-peek-tooltip .tooltip-note-header {
+.tooltip-header {
+  background: linear-gradient(
+    135deg,
+    var(--monday-purple-primary) 0%,
+    var(--monday-purple-secondary) 100%
+  );
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: var(--tooltip-border-radius) var(--tooltip-border-radius) 0 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
 }
 
-/* Tooltip author/creator info */
-.monday-quick-peek-tooltip .tooltip-author {
+.tooltip-header .tooltip-task-name {
+  font-size: 16px;
   font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.tooltip-header .tooltip-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--tooltip-transition);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.tooltip-header .tooltip-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.tooltip-header .tooltip-close:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   TOOLTIP SEARCH - Search Input Box
+   ============================================ */
+
+.tooltip-search {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--monday-border-light);
+  background: var(--tooltip-bg);
+  flex-shrink: 0;
+}
+
+.tooltip-search input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  border: 1px solid var(--monday-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--tooltip-font-family);
   color: var(--monday-text-primary);
+  background: var(--monday-background);
+  transition: var(--tooltip-transition);
+  outline: none;
+  box-sizing: border-box;
 }
 
-/* Tooltip timestamp */
-.monday-quick-peek-tooltip .tooltip-timestamp {
-  color: var(--monday-text-secondary);
-  font-size: 12px;
+.tooltip-search input::placeholder {
+  color: var(--monday-text-tertiary);
 }
 
-/* Tooltip body text */
-.monday-quick-peek-tooltip .tooltip-body {
-  color: var(--tooltip-text);
-  white-space: pre-wrap;
+.tooltip-search input:hover {
+  border-color: var(--monday-purple-primary);
 }
 
-/* Tooltip markdown formatting */
-.monday-quick-peek-tooltip .tooltip-body p {
-  margin: 0 0 8px 0;
+.tooltip-search input:focus {
+  border-color: var(--monday-purple-primary);
+  box-shadow: 0 0 0 3px var(--monday-purple-light);
+  outline: none;
 }
 
-.monday-quick-peek-tooltip .tooltip-body p:last-child {
+.tooltip-search {
+  position: relative;
+}
+
+.tooltip-search::before {
+  content: "🔍";
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================
+   TOOLTIP CONTENT - Scrollable Notes List
+   ============================================ */
+
+.tooltip-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px;
+  background: var(--tooltip-bg);
+}
+
+.tooltip-content:empty::before {
+  content: "No notes available";
+  display: block;
+  text-align: center;
+  color: var(--monday-text-tertiary);
+  padding: 40px 20px;
+  font-size: 14px;
+}
+
+/* ============================================
+   NOTE ITEM - Individual Note Card
+   ============================================ */
+
+.note-item,
+.tooltip-note {
+  background: var(--monday-background);
+  border: 1px solid var(--monday-border-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: var(--tooltip-transition);
+  position: relative;
+}
+
+.note-item:last-child,
+.tooltip-note:last-child {
   margin-bottom: 0;
 }
 
-.monday-quick-peek-tooltip .tooltip-body strong {
+.note-item:hover,
+.tooltip-note:hover {
+  border-color: var(--monday-purple-primary);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+
+.note-item:active,
+.tooltip-note:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   NOTE AUTHOR - Name + Photo
+   ============================================ */
+
+.note-author,
+.tooltip-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--monday-text-primary);
+  font-size: 13px;
+}
+
+.note-author img,
+.tooltip-author img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--monday-border-light);
+  transition: var(--tooltip-transition);
+}
+
+.note-item:hover .note-author img,
+.tooltip-note:hover .tooltip-author img {
+  border-color: var(--monday-purple-primary);
+  transform: scale(1.05);
+}
+
+.note-author .author-name,
+.tooltip-author .author-name {
+  flex: 1;
   font-weight: 600;
   color: var(--monday-text-primary);
 }
 
-.monday-quick-peek-tooltip .tooltip-body em {
+/* ============================================
+   NOTE TIME - Relative Timestamp
+   ============================================ */
+
+.note-time,
+.tooltip-timestamp {
+  color: var(--monday-text-tertiary);
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.note-item .note-header,
+.tooltip-note .tooltip-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+/* ============================================
+   NOTE BODY - Note Content
+   ============================================ */
+
+.note-body,
+.tooltip-body {
+  color: var(--monday-text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.note-body p,
+.tooltip-body p {
+  margin: 0 0 8px 0;
+}
+
+.note-body p:last-child,
+.tooltip-body p:last-child {
+  margin-bottom: 0;
+}
+
+.note-body strong,
+.tooltip-body strong {
+  font-weight: 600;
+  color: var(--monday-text-primary);
+}
+
+.note-body em,
+.tooltip-body em {
   font-style: italic;
 }
 
-.monday-quick-peek-tooltip .tooltip-body code {
-  background: var(--monday-border);
+.note-body code,
+.tooltip-body code {
+  background: var(--monday-border-light);
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'Monaco', 'Courier New', monospace;
+  font-family: "Monaco", "Courier New", monospace;
   font-size: 12px;
+  color: var(--monday-purple-primary);
 }
 
-.monday-quick-peek-tooltip .tooltip-body a {
-  color: var(--monday-primary);
+.note-body a,
+.tooltip-body a {
+  color: var(--monday-purple-primary);
   text-decoration: none;
+  font-weight: 500;
+  transition: var(--tooltip-transition);
 }
 
-.monday-quick-peek-tooltip .tooltip-body a:hover {
+.note-body a:hover,
+.tooltip-body a:hover {
+  color: var(--monday-purple-hover);
   text-decoration: underline;
 }
 
 /* Tooltip mentions (Monday.com @mentions) */
-.monday-quick-peek-tooltip .tooltip-mention {
-  color: var(--monday-primary);
+.note-body .mention,
+.tooltip-body .mention,
+.tooltip-mention {
+  color: var(--monday-purple-primary);
   font-weight: 500;
-  background: rgba(0, 115, 234, 0.1);
-  padding: 2px 4px;
+  background: var(--monday-purple-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* ============================================
+   TOOLTIP NOTES CONTAINER
+   ============================================ */
+
+.tooltip-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ============================================
+   SCROLLBAR STYLING - Thin, Modern
+   ============================================ */
+
+.tooltip-content::-webkit-scrollbar,
+#quick-peek-tooltip::-webkit-scrollbar,
+.monday-quick-peek-tooltip::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tooltip-content::-webkit-scrollbar-track,
+#quick-peek-tooltip::-webkit-scrollbar-track,
+.monday-quick-peek-tooltip::-webkit-scrollbar-track {
+  background: transparent;
   border-radius: 4px;
 }
 
-/* Tooltip loading state */
-.monday-quick-peek-tooltip.loading {
-  min-width: 200px;
-  text-align: center;
-  color: var(--monday-text-secondary);
-}
-
-.monday-quick-peek-tooltip.loading::after {
-  content: '...';
-  animation: loadingDots 1.5s infinite;
-}
-
-/* Tooltip error state */
-.monday-quick-peek-tooltip.error {
-  border-color: #ff5555;
-  background: rgba(255, 85, 85, 0.1);
-  color: #ff5555;
-}
-
-/* Tooltip scrollbar styling */
-.monday-quick-peek-tooltip::-webkit-scrollbar {
-  width: 6px;
-}
-
-.monday-quick-peek-tooltip::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+.tooltip-content::-webkit-scrollbar-thumb,
+#quick-peek-tooltip::-webkit-scrollbar-thumb,
 .monday-quick-peek-tooltip::-webkit-scrollbar-thumb {
   background: var(--monday-border);
-  border-radius: 3px;
+  border-radius: 4px;
+  transition: var(--tooltip-transition);
 }
 
+.tooltip-content::-webkit-scrollbar-thumb:hover,
+#quick-peek-tooltip::-webkit-scrollbar-thumb:hover,
 .monday-quick-peek-tooltip::-webkit-scrollbar-thumb:hover {
   background: var(--monday-text-secondary);
 }
 
-/* Animations */
+/* Firefox scrollbar */
+.tooltip-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--monday-border) transparent;
+}
+
+/* ============================================
+   ANIMATIONS - Fade In & Slide Up
+   ============================================ */
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -241,27 +467,213 @@
 }
 
 @keyframes loadingDots {
-  0%, 20% {
-    content: '.';
+  0%,
+  20% {
+    content: ".";
   }
   40% {
-    content: '..';
+    content: "..";
   }
-  60%, 100% {
-    content: '...';
+  60%,
+  100% {
+    content: "...";
   }
 }
 
-/* Responsive adjustments */
+/* ============================================
+   LOADING & ERROR STATES
+   ============================================ */
+
+#quick-peek-tooltip.loading,
+.monday-quick-peek-tooltip.loading {
+  min-width: 200px;
+  text-align: center;
+  color: var(--monday-text-secondary);
+  padding: 40px 20px;
+}
+
+#quick-peek-tooltip.loading::after,
+.monday-quick-peek-tooltip.loading::after {
+  content: "...";
+  animation: loadingDots 1.5s infinite;
+}
+
+#quick-peek-tooltip.error,
+.monday-quick-peek-tooltip.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  color: #ef4444;
+}
+
+/* ============================================
+   RESPONSIVE BEHAVIOR
+   ============================================ */
+
 @media (max-width: 768px) {
+  #quick-peek-tooltip,
   .monday-quick-peek-tooltip {
-    max-width: calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    max-width: 420px;
     font-size: 13px;
   }
+
+  .tooltip-header {
+    padding: 14px 16px;
+  }
+
+  .tooltip-header .tooltip-task-name {
+    font-size: 15px;
+  }
+
+  .tooltip-content {
+    padding: 12px 16px;
+  }
+
+  .note-item,
+  .tooltip-note {
+    padding: 12px 14px;
+  }
 }
 
-/* TODO: Add tooltip arrow styles */
-/* TODO: Add positioning variants (top, bottom, left, right) */
-/* TODO: Add hover effects */
-/* TODO: Add transition animations */
+@media (max-width: 480px) {
+  #quick-peek-tooltip,
+  .monday-quick-peek-tooltip {
+    width: calc(100vw - 24px);
+    max-height: 400px;
+  }
 
+  .tooltip-header {
+    padding: 12px 14px;
+  }
+
+  .tooltip-search {
+    padding: 10px 14px;
+  }
+
+  .tooltip-content {
+    padding: 10px 14px;
+  }
+}
+
+/* ============================================
+   POSITIONING HELPERS
+   ============================================ */
+
+/* Reposition if near screen edge */
+#quick-peek-tooltip.near-right-edge,
+.monday-quick-peek-tooltip.near-right-edge {
+  transform-origin: top right;
+}
+
+#quick-peek-tooltip.near-left-edge,
+.monday-quick-peek-tooltip.near-left-edge {
+  transform-origin: top left;
+}
+
+#quick-peek-tooltip.near-bottom-edge,
+.monday-quick-peek-tooltip.near-bottom-edge {
+  transform-origin: bottom center;
+}
+
+/* ============================================
+   ACCESSIBILITY & FOCUS STATES
+   ============================================ */
+
+.tooltip-search input:focus-visible {
+  outline: 2px solid var(--monday-purple-primary);
+  outline-offset: 2px;
+}
+
+.note-item:focus-within,
+.tooltip-note:focus-within {
+  border-color: var(--monday-purple-primary);
+  box-shadow: 0 0 0 3px var(--monday-purple-light);
+}
+
+/* ============================================
+   SMOOTH SCROLLING
+   ============================================ */
+
+.tooltip-content {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   LEGACY COMPATIBILITY
+   ============================================ */
+
+/* Support for existing class names */
+.monday-quick-peek-tooltip .tooltip-header {
+  background: linear-gradient(
+    135deg,
+    var(--monday-purple-primary) 0%,
+    var(--monday-purple-secondary) 100%
+  );
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: var(--tooltip-border-radius) var(--tooltip-border-radius) 0 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.monday-quick-peek-tooltip .tooltip-task-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.monday-quick-peek-tooltip .tooltip-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.monday-quick-peek-tooltip .tooltip-note {
+  background: var(--monday-background);
+  border: 1px solid var(--monday-border-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  transition: var(--tooltip-transition);
+}
+
+.monday-quick-peek-tooltip .tooltip-note:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 14px;
+}
+
+.monday-quick-peek-tooltip .tooltip-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.monday-quick-peek-tooltip .tooltip-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--monday-text-primary);
+  font-size: 13px;
+}
+
+.monday-quick-peek-tooltip .tooltip-timestamp {
+  color: var(--monday-text-tertiary);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.monday-quick-peek-tooltip .tooltip-body {
+  color: var(--monday-text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}

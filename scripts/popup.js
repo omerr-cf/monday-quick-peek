@@ -1,6 +1,6 @@
 /**
  * Popup Script for Monday Quick Peek Extension
- * 
+ *
  * This script handles:
  * - Settings page UI logic
  * - API key management (save/load/validate)
@@ -18,9 +18,9 @@ let apiKeyStatus = null;
 /**
  * Initialize popup when DOM is ready
  */
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('Monday Quick Peek: Popup loaded');
-  
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("Monday Quick Peek: Popup loaded");
+
   initializeElements();
   loadSettings();
   attachEventListeners();
@@ -30,12 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
  * Initialize DOM element references
  */
 function initializeElements() {
-  apiKeyInput = document.getElementById('api-key-input');
-  saveButton = document.getElementById('save-button');
-  testButton = document.getElementById('test-button');
-  statusMessage = document.getElementById('status-message');
-  apiKeyStatus = document.getElementById('api-key-status');
-  
+  apiKeyInput = document.getElementById("api-key-input");
+  saveButton = document.getElementById("save-button");
+  testButton = document.getElementById("test-button");
+  statusMessage = document.getElementById("status-message");
+  apiKeyStatus = document.getElementById("api-key-status");
+
   // TODO: Initialize other UI elements
   // TODO: Add toggle switches for preferences
   // TODO: Add hover delay slider
@@ -47,23 +47,22 @@ function initializeElements() {
 async function loadSettings() {
   try {
     // Load API key
-    const result = await chrome.storage.sync.get(['apiKey', 'settings']);
-    
+    const result = await chrome.storage.sync.get(["apiKey", "settings"]);
+
     if (result.apiKey) {
       apiKeyInput.value = result.apiKey;
       updateApiKeyStatus(true);
     } else {
       updateApiKeyStatus(false);
     }
-    
+
     // TODO: Load other settings (hover delay, theme, etc.)
     if (result.settings) {
       // Apply settings to UI
     }
-    
   } catch (error) {
-    console.error('Popup: Error loading settings', error);
-    showStatus('Error loading settings', 'error');
+    console.error("Popup: Error loading settings", error);
+    showStatus("Error loading settings", "error");
   }
 }
 
@@ -72,21 +71,21 @@ async function loadSettings() {
  */
 function attachEventListeners() {
   if (saveButton) {
-    saveButton.addEventListener('click', handleSaveApiKey);
+    saveButton.addEventListener("click", handleSaveApiKey);
   }
-  
+
   if (testButton) {
-    testButton.addEventListener('click', handleTestConnection);
+    testButton.addEventListener("click", handleTestConnection);
   }
-  
+
   // TODO: Add listeners for other settings
   // TODO: Add input validation on keyup
   // TODO: Add keyboard shortcuts
-  
+
   // Auto-save on Enter key
   if (apiKeyInput) {
-    apiKeyInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+    apiKeyInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
         handleSaveApiKey();
       }
     });
@@ -98,41 +97,40 @@ function attachEventListeners() {
  */
 async function handleSaveApiKey() {
   const apiKey = apiKeyInput?.value?.trim();
-  
+
   if (!apiKey) {
-    showStatus('Please enter an API key', 'error');
+    showStatus("Please enter an API key", "error");
     return;
   }
-  
+
   // Validate format (basic check)
   if (!isValidApiKeyFormat(apiKey)) {
-    showStatus('Invalid API key format', 'error');
+    showStatus("Invalid API key format", "error");
     return;
   }
-  
+
   // Show loading state
   setButtonLoading(saveButton, true);
-  showStatus('Saving...', 'info');
-  
+  showStatus("Saving...", "info");
+
   try {
     // Send to background script
     const response = await sendMessage({
-      action: 'saveApiKey',
-      apiKey: apiKey
+      action: "saveApiKey",
+      apiKey: apiKey,
     });
-    
+
     if (response.success) {
-      showStatus('API key saved successfully!', 'success');
+      showStatus("API key saved successfully!", "success");
       updateApiKeyStatus(true);
-      
+
       // TODO: Auto-test connection after saving
     } else {
-      showStatus(response.error || 'Failed to save API key', 'error');
+      showStatus(response.error || "Failed to save API key", "error");
     }
-    
   } catch (error) {
-    console.error('Popup: Error saving API key', error);
-    showStatus('Error saving API key: ' + error.message, 'error');
+    console.error("Popup: Error saving API key", error);
+    showStatus("Error saving API key: " + error.message, "error");
   } finally {
     setButtonLoading(saveButton, false);
   }
@@ -143,34 +141,33 @@ async function handleSaveApiKey() {
  */
 async function handleTestConnection() {
   const apiKey = apiKeyInput?.value?.trim();
-  
+
   if (!apiKey) {
-    showStatus('Please enter an API key first', 'error');
+    showStatus("Please enter an API key first", "error");
     return;
   }
-  
+
   // Show loading state
   setButtonLoading(testButton, true);
-  showStatus('Testing connection...', 'info');
-  
+  showStatus("Testing connection...", "info");
+
   try {
     const response = await sendMessage({
-      action: 'testApiConnection',
-      apiKey: apiKey
+      action: "testApiConnection",
+      apiKey: apiKey,
     });
-    
+
     if (response.success) {
-      const userName = response.user?.name || 'Unknown';
-      showStatus(`Connection successful! Connected as ${userName}`, 'success');
+      const userName = response.user?.name || "Unknown";
+      showStatus(`Connection successful! Connected as ${userName}`, "success");
       updateApiKeyStatus(true);
     } else {
-      showStatus(response.error || 'Connection failed', 'error');
+      showStatus(response.error || "Connection failed", "error");
       updateApiKeyStatus(false);
     }
-    
   } catch (error) {
-    console.error('Popup: Error testing connection', error);
-    showStatus('Error testing connection: ' + error.message, 'error');
+    console.error("Popup: Error testing connection", error);
+    showStatus("Error testing connection: " + error.message, "error");
   } finally {
     setButtonLoading(testButton, false);
   }
@@ -193,13 +190,13 @@ function isValidApiKeyFormat(apiKey) {
  */
 function updateApiKeyStatus(isSet) {
   if (!apiKeyStatus) return;
-  
+
   if (isSet) {
-    apiKeyStatus.textContent = '✓ API Key Configured';
-    apiKeyStatus.className = 'status-indicator status-success';
+    apiKeyStatus.textContent = "✓ API Key Configured";
+    apiKeyStatus.className = "status-indicator status-success";
   } else {
-    apiKeyStatus.textContent = '⚠ API Key Not Set';
-    apiKeyStatus.className = 'status-indicator status-warning';
+    apiKeyStatus.textContent = "⚠ API Key Not Set";
+    apiKeyStatus.className = "status-indicator status-warning";
   }
 }
 
@@ -208,18 +205,18 @@ function updateApiKeyStatus(isSet) {
  * @param {string} message - Message to show
  * @param {string} type - Message type (success, error, info)
  */
-function showStatus(message, type = 'info') {
+function showStatus(message, type = "info") {
   if (!statusMessage) return;
-  
+
   statusMessage.textContent = message;
   statusMessage.className = `status-message status-${type}`;
-  
+
   // Auto-hide after 5 seconds for success messages
-  if (type === 'success') {
+  if (type === "success") {
     setTimeout(() => {
       if (statusMessage.textContent === message) {
-        statusMessage.textContent = '';
-        statusMessage.className = 'status-message';
+        statusMessage.textContent = "";
+        statusMessage.className = "status-message";
       }
     }, 5000);
   }
@@ -232,17 +229,19 @@ function showStatus(message, type = 'info') {
  */
 function setButtonLoading(button, loading) {
   if (!button) return;
-  
+
   if (loading) {
     button.disabled = true;
-    button.textContent = button.textContent.replace('Save', 'Saving...').replace('Test', 'Testing...');
+    button.textContent = button.textContent
+      .replace("Save", "Saving...")
+      .replace("Test", "Testing...");
   } else {
     button.disabled = false;
     // TODO: Restore original button text
-    if (button.id === 'save-button') {
-      button.textContent = 'Save API Key';
-    } else if (button.id === 'test-button') {
-      button.textContent = 'Test Connection';
+    if (button.id === "save-button") {
+      button.textContent = "Save API Key";
+    } else if (button.id === "test-button") {
+      button.textContent = "Test Connection";
     }
   }
 }
@@ -272,10 +271,9 @@ async function saveSettings(settings) {
   // TODO: Save user preferences (hover delay, theme, etc.)
   try {
     await chrome.storage.sync.set({ settings: settings });
-    showStatus('Settings saved', 'success');
+    showStatus("Settings saved", "success");
   } catch (error) {
-    console.error('Popup: Error saving settings', error);
-    showStatus('Error saving settings', 'error');
+    console.error("Popup: Error saving settings", error);
+    showStatus("Error saving settings", "error");
   }
 }
-
