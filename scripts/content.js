@@ -316,7 +316,7 @@
    * @param {HTMLElement} row - The task row being hovered
    * @param {Event} event - Mouse event for positioning
    */
-  function showTooltip(row, event) {
+  async function showTooltip(row, event) {
     // Prevent multiple tooltips
     if (currentTooltip) {
       hideTooltip();
@@ -337,23 +337,103 @@
     // Reset search state for new tooltip
     currentSearchTerm = "";
 
-    // For now, use mock data (will be replaced with API call)
-    const content = formatMockContent(taskName, mockNotes, "");
-
-    tooltip.innerHTML = content;
+    // Show loading state
+    tooltip.innerHTML =
+      '<div class="tooltip-content"><div style="text-align: center; padding: 40px; color: #676879;">Loading...</div></div>';
     tooltip.style.display = "block";
-
-    // Position tooltip
     positionTooltip(tooltip, row, event);
-
     currentTooltip = tooltip;
 
-    // Attach search listeners after content is set
-    setTimeout(() => {
-      attachSearchListeners();
-    }, 50);
+    try {
+      // Try to fetch real data from API
+      const itemId = getTaskId(row);
+      if (itemId) {
+        const response = await fetchContentFromAPI(itemId, "note");
+        if (response && response.success && response.data) {
+          const content = formatMockContent(taskName, response.data, "");
+          tooltip.innerHTML = content;
+        } else if (response && !response.success) {
+          // Handle API error
+          throw new Error(response.error || "Failed to fetch content");
+        } else {
+          // Fallback to mock data
+          const content = formatMockContent(taskName, mockNotes, "");
+          tooltip.innerHTML = content;
+        }
+      } else {
+        // No item ID, use mock data
+        const content = formatMockContent(taskName, mockNotes, "");
+        tooltip.innerHTML = content;
+      }
 
-    console.log("Monday Quick Peek: Tooltip displayed");
+      // Position tooltip again after content is loaded
+      positionTooltip(tooltip, row, event);
+
+      // Attach search listeners after content is set
+      setTimeout(() => {
+        attachSearchListeners();
+      }, 50);
+
+      console.log("Monday Quick Peek: Tooltip displayed");
+    } catch (error) {
+      console.error("Monday Quick Peek: Error showing tooltip", error);
+
+      // Use error handler to show error UI
+      if (window.ErrorHandler) {
+        window.ErrorHandler.handle(error, "showTooltip", {
+          showUI: true,
+          retry: true,
+          retryCallback: () => showTooltip(row, event),
+        });
+      } else {
+        // Fallback error display
+        tooltip.innerHTML = `
+          <div class="error-container">
+            <div class="error-header">
+              <span class="error-icon">⚠️</span>
+              <span class="error-title">Error</span>
+            </div>
+            <div class="error-message">${escapeHtml(
+              error.message || "Failed to load content"
+            )}</div>
+          </div>
+        `;
+        tooltip.classList.add("error-state");
+      }
+    }
+  }
+
+  /**
+   * Get task ID from row element
+   * @param {HTMLElement} row - Task row element
+   * @returns {string|null} Task ID or null
+   */
+  function getTaskId(row) {
+    // Try to extract task ID from various attributes
+    const idSelectors = [
+      "[data-item-id]",
+      "[data-id]",
+      "[id*='item']",
+      "[id*='task']",
+    ];
+
+    for (const selector of idSelectors) {
+      const element = row.querySelector(selector) || row.closest(selector);
+      if (element) {
+        const id =
+          element.dataset.itemId ||
+          element.dataset.id ||
+          element.id?.match(/\d+/)?.[0];
+        if (id) return id;
+      }
+    }
+
+    // Try to get from row itself
+    const rowId =
+      row.dataset.itemId || row.dataset.id || row.id?.match(/\d+/)?.[0];
+    if (rowId) return rowId;
+
+    return null;
   }
 
   /**
@@ -821,7 +901,7 @@
    * Request content from background script (for future API integration)
    * @param {string} itemId - Monday.com item ID
    * @param {string} type - Content type (note/comment)
-   * @returns {Promise<string>} Content promise
+   * @returns {Promise<Object>} Response object with success and data
    */
   async function fetchContentFromAPI(itemId, type) {
     console.log(
@@ -831,20 +911,66 @@
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
-          action: "fetchContent",
-          itemId: itemId,
+          action: "fetchNotes",
+          taskId: itemId,
           type: type,
         },
         (response) => {
           if (chrome.runtime.lastError) {
-            console.error(
-              "Monday Quick Peek: API error",
-              chrome.runtime.lastError
-            );
-            reject(chrome.runtime.lastError);
-          } else {
+            const error = new Error(chrome.runtime.lastError.message);
+            error.code = "NETWORK_ERROR";
+
+            // Use error handler if available
+            if (window.ErrorHandler) {
+              window.ErrorHandler.handle(error, "fetchContentFromAPI", {
+                showUI: false, // Don't show UI here, let showTooltip handle it
+              });
+            }
+
+            reject(error);
+            return;
+          }
+
+          if (!response) {
+            const error = new Error("No response from background script");
+            error.code = "UNKNOWN_ERROR";
+            reject(error);
+            return;
+          }
+
+          if (response.success) {
             console.log("Monday Quick Peek: API response received", response);
-            resolve(response?.content || "");
+            resolve({
+              success: true,
+              data: response.data,
+              cached: response.cached || false,
+            });
+          } else {
+            // Handle API errors
+            const error = new Error(
+              response.error || "Failed to fetch content"
+            );
+
+            // Classify error based on response
+            if (response.error?.includes("API key")) {
+              error.code =
+                window.ErrorHandler?.ERROR_CODES?.API_KEY_MISSING ||
+                "API_KEY_MISSING";
+            } else if (response.error?.includes("not found")) {
+              error.code =
+                window.ErrorHandler?.ERROR_CODES?.TASK_NOT_FOUND ||
+                "TASK_NOT_FOUND";
+            } else if (response.error?.includes("rate limit")) {
+              error.code =
+                window.ErrorHandler?.ERROR_CODES?.RATE_LIMITED ||
+                "RATE_LIMITED";
+            } else {
+              error.code =
+                window.ErrorHandler?.ERROR_CODES?.UNKNOWN_ERROR ||
+                "UNKNOWN_ERROR";
+            }
+
+            reject(error);
           }
         }
       );

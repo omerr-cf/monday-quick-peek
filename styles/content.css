@@ -683,6 +683,162 @@ mark.search-highlight {
 }
 
 /* ============================================
+   ERROR UI STYLES
+   ============================================ */
+
+#quick-peek-tooltip.error-state,
+.monday-quick-peek-tooltip.error-state {
+  border-color: #ef4444;
+  background: #ffffff;
+}
+
+.error-container {
+  padding: 24px 20px;
+  text-align: center;
+  animation: errorSlideIn 0.3s ease;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  font-size: 32px;
+  animation: errorPulse 2s infinite;
+}
+
+@keyframes errorPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.error-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.error-message {
+  font-size: 14px;
+  color: #991b1b;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.error-action-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--tooltip-font-family);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+  margin: 0 auto;
+  display: block;
+}
+
+.error-action-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.error-action-btn:active {
+  transform: translateY(0);
+}
+
+.error-dismiss-btn {
+  background: #f3f4f6;
+  color: #323338;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-dismiss-btn:hover {
+  background: #e1e4e8;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.error-auto-dismiss {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #676879;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.error-countdown {
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* Retry Indicator */
+.error-retry-indicator {
+  padding: 16px 20px;
+  background: #dbeafe;
+  border-top: 1px solid #bfdbfe;
+  text-align: center;
+  animation: retrySlideIn 0.3s ease;
+}
+
+@keyframes retrySlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.retry-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #bfdbfe;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+.retry-message {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 6px;
+}
+
+.retry-delay {
+  font-size: 12px;
+  color: #3b82f6;
+}
+
+/* ============================================
    RESPONSIVE BEHAVIOR
    ============================================ */
 

@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.monday.com/*"],
-      "js": ["scripts/content.js"],
+      "js": ["scripts/errorHandler.js", "scripts/content.js"],
       "css": ["styles/content.css"],
       "run_at": "document_idle",
       "all_frames": false
