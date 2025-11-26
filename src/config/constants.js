@@ -27,4 +27,10 @@ export const CONFIG = {
   // Retry settings
   maxRetries: 5, // Maximum retry attempts for attaching listeners
   retryDelay: 1000, // Delay between retries (ms)
+
+  // Gumroad settings
+  gumroad: {
+    productUrl: "https://busymind.gumroad.com/l/monday-quick-peek-pro",
+    productPermalink: "monday-quick-peek-pro", // Product permalink for API calls
+  },
 };

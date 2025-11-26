@@ -12,7 +12,10 @@
   "use strict";
 
   // Configuration
+  // Merge with centralized CONFIG from config.js (loaded before this script)
   const CONFIG = {
+    ...(window.CONFIG || {}), // Use centralized config as base
+    // Content script specific overrides
     hoverDelay: 500, // Delay before showing tooltip (ms) - prevents accidental triggers
     hideDelay: 400, // Delay before hiding tooltip (ms) - increased for easier cursor movement
     tooltipId: "quick-peek-tooltip",
@@ -24,6 +27,7 @@
     },
     tooltipOffset: 20, // Distance from cursor/element - increased for easier cursor movement
     zIndex: 999999, // High z-index to appear above Monday.com UI
+    // Gumroad config comes from centralized CONFIG.gumroad (no need to duplicate)
   };
 
   // State management
@@ -156,18 +160,10 @@
       const rowsFound = attachHoverListeners();
 
       if (rowsFound === 0 && attempts < maxRetries) {
-        console.log(
-          `Monday Quick Peek: No rows found, retrying in ${delay}ms...`
-        );
+        // Silently retry - no need to log
         setTimeout(tryAttach, delay);
-      } else if (rowsFound === 0) {
-        console.warn(
-          "Monday Quick Peek: No task rows found after all retries. The page might use a different structure."
-        );
-        console.log(
-          "Monday Quick Peek: Try navigating to a board view or check the page structure."
-        );
       }
+      // Silently handle no rows found - it's ok if there are no tasks on this page
     };
 
     tryAttach();
@@ -292,13 +288,7 @@
     });
 
     if (rows.length === 0) {
-      console.warn("Monday Quick Peek: No task rows found");
-      console.log(
-        "Monday Quick Peek: Current page structure might be different"
-      );
-      console.log(
-        "Monday Quick Peek: Try navigating to a board view or wait for content to load"
-      );
+      // Silently return - it's ok if there are no task rows on this page
       return 0;
     }
 
@@ -356,8 +346,6 @@
     }
 
     currentTarget = row;
-
-    console.log("Monday Quick Peek: Mouse entered task row", row);
 
     // Show tooltip after delay
     hoverTimeout = setTimeout(() => {
@@ -456,22 +444,25 @@
     if (window.UsageTracker) {
       const usageCheck = await window.UsageTracker.canShowTooltip();
 
-      if (!usageCheck.allowed && !usageCheck.showBanner) {
-        // Show upgrade prompt (only first few times)
-        await window.UsageTracker.incrementUpgradePromptCount();
-        showUpgradePrompt(tooltip, row, event, usageCheck.message);
+      // If limit reached and should show banner (after 3 prompts), show banner only
+      // But only if user is not Pro
+      if (usageCheck.showBanner && !usageCheck.isPro) {
+        // After 3 upgrade prompts, show banner on hover (not tooltip)
+        // Only for free users, Pro users never see banner
+        showUpgradeBanner();
+        // Don't show tooltip - only banner
         return;
       }
 
-      if (usageCheck.showBanner) {
-        // Show banner instead of blocking tooltip (but check if dismissed)
-        const wasDismissed = wasBannerDismissedToday();
-        if (!wasDismissed) {
-          showUpgradeBanner();
-        }
-        // Still show tooltip but with banner visible
+      // If limit reached but haven't shown banner yet (first 3 times), show upgrade prompt
+      if (!usageCheck.allowed && !usageCheck.showBanner) {
+        // Show upgrade prompt (only first few times, max 3)
+        await window.UsageTracker.incrementUpgradePromptCount();
+        showUpgradePrompt(tooltip, row, event, usageCheck.message);
+        return; // Don't show tooltip, only upgrade prompt
       }
 
+      // If allowed (has remaining views), show tooltip normally
       // Store usage info for watermark
       tooltip.dataset.usageRemaining = usageCheck.remaining;
       tooltip.dataset.isPro = usageCheck.isPro ? "true" : "false";
@@ -515,8 +506,7 @@
         );
 
         // Check if request was cancelled
-        if (requestAbortController.signal.aborted) {
-          console.log("Monday Quick Peek: Request was cancelled");
+        if (requestAbortController && requestAbortController.signal.aborted) {
           return;
         }
 
@@ -1470,7 +1460,9 @@
         <div class="upgrade-icon">🚀</div>
         <h3>Upgrade to Pro</h3>
         <p>${escapeHtml(message)}</p>
-        <button class="upgrade-btn" onclick="window.open('https://gumroad.com/l/monday-quick-peek-pro', '_blank')">
+        <button class="upgrade-btn" onclick="window.open('${
+          CONFIG.gumroad.productUrl
+        }', '_blank')">
           Upgrade Now - $9/month
         </button>
         <div class="upgrade-features">
@@ -1491,7 +1483,7 @@
     if (upgradeBtn) {
       upgradeBtn.addEventListener("click", (e) => {
         e.preventDefault();
-        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+        window.open(CONFIG.gumroad.productUrl, "_blank");
       });
     }
   }
@@ -1524,7 +1516,7 @@
     if (upgradeLink) {
       upgradeLink.addEventListener("click", (e) => {
         e.preventDefault();
-        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+        window.open(CONFIG.gumroad.productUrl, "_blank");
       });
     }
   }
@@ -1547,7 +1539,18 @@
   /**
    * Show upgrade banner at top of page (after upgrade prompt shown multiple times)
    */
-  function showUpgradeBanner() {
+  async function showUpgradeBanner() {
+    // Don't show banner if user is Pro
+    if (window.UsageTracker) {
+      const isPro = await window.UsageTracker.isProUser();
+      if (isPro) {
+        console.log(
+          "Monday Quick Peek: User is Pro, not showing upgrade banner"
+        );
+        return; // Pro users don't see upgrade banner
+      }
+    }
+
     // Check if banner already exists
     let banner = document.getElementById("monday-quick-peek-banner");
     if (banner) {
@@ -1574,7 +1577,7 @@
     if (upgradeLink) {
       upgradeLink.addEventListener("click", (e) => {
         e.preventDefault();
-        window.open("https://gumroad.com/l/monday-quick-peek-pro", "_blank");
+        window.open(CONFIG.gumroad.productUrl, "_blank");
       });
     }
 
@@ -1590,12 +1593,7 @@
       });
     }
 
-    // Auto-hide after 10 seconds
-    setTimeout(() => {
-      if (banner && banner.parentNode) {
-        hideUpgradeBanner();
-      }
-    }, 10000);
+    // Don't auto-hide - let user dismiss it manually or it stays until page reload
   }
 
   /**

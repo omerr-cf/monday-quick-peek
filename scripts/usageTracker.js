@@ -1,6 +1,8 @@
 /**
  * Usage Tracker for Monday Quick Peek Extension
  * Tracks daily tooltip views and enforces free tier limits
+ *
+ * Note: Requires GumroadAPI for Pro license validation
  */
 
 class UsageTracker {
@@ -12,19 +14,33 @@ class UsageTracker {
    * @returns {Promise<boolean>} True if tracking is disabled
    */
   static async isTrackingDisabled() {
-    // Check localStorage first (for quick dev toggle)
-    if (typeof localStorage !== "undefined") {
-      const localFlag = localStorage.getItem(
-        "mondayQuickPeek_disableUsageTracking"
-      );
-      if (localFlag === "true") {
-        return true;
+    try {
+      // Check localStorage first (for quick dev toggle)
+      if (typeof localStorage !== "undefined") {
+        const localFlag = localStorage.getItem(
+          "mondayQuickPeek_disableUsageTracking"
+        );
+        if (localFlag === "true") {
+          return true;
+        }
       }
-    }
 
-    // Check chrome storage
-    const result = await chrome.storage.local.get("disableUsageTracking");
-    return result.disableUsageTracking === true;
+      // Check chrome storage (with error handling for invalidated context)
+      if (!chrome?.storage?.local) {
+        // Extension context invalidated - default to false (tracking enabled)
+        return false;
+      }
+
+      const result = await chrome.storage.local.get("disableUsageTracking");
+      return result.disableUsageTracking === true;
+    } catch (error) {
+      // Extension context invalidated or other error - default to false (tracking enabled)
+      console.warn(
+        "UsageTracker: Error checking tracking status, defaulting to enabled",
+        error
+      );
+      return false;
+    }
   }
 
   /**
@@ -63,13 +79,16 @@ class UsageTracker {
     const limit = this.FREE_TIER_LIMIT;
 
     if (usage >= limit) {
+      // When limit is reached:
+      // - First 3 times: show upgrade prompt (allowed: false, showBanner: false)
+      // - After 3 times: show banner only (allowed: false, showBanner: true)
       return {
-        allowed: shouldShowBanner, // Allow tooltip if showing banner instead
+        allowed: false, // Never allow tooltip when limit is reached
         isPro: false,
         remaining: 0,
         limit: limit,
         message: "Daily limit reached! Upgrade to Pro for unlimited views.",
-        showBanner: shouldShowBanner,
+        showBanner: shouldShowBanner, // Show banner only after 3 prompts
       };
     }
 
@@ -88,10 +107,18 @@ class UsageTracker {
    * Increment upgrade prompt count
    */
   static async incrementUpgradePromptCount() {
-    const result = await chrome.storage.local.get("upgradePromptCount");
-    const count = (result.upgradePromptCount || 0) + 1;
-    await chrome.storage.local.set({ upgradePromptCount: count });
-    console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
+    try {
+      if (!chrome?.storage?.local) return;
+      const result = await chrome.storage.local.get("upgradePromptCount");
+      const count = (result.upgradePromptCount || 0) + 1;
+      await chrome.storage.local.set({ upgradePromptCount: count });
+      console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
+    } catch (error) {
+      console.warn(
+        "UsageTracker: Error incrementing upgrade prompt count",
+        error
+      );
+    }
   }
 
   /**
@@ -99,42 +126,58 @@ class UsageTracker {
    * @returns {Promise<number>} Number of times upgrade prompt was shown
    */
   static async getUpgradePromptCount() {
-    const result = await chrome.storage.local.get("upgradePromptCount");
-    return result.upgradePromptCount || 0;
+    try {
+      if (!chrome?.storage?.local) return 0;
+      const result = await chrome.storage.local.get("upgradePromptCount");
+      return result.upgradePromptCount || 0;
+    } catch (error) {
+      console.warn("UsageTracker: Error getting upgrade prompt count", error);
+      return 0;
+    }
   }
 
   /**
    * Reset upgrade prompt count (for testing)
    */
   static async resetUpgradePromptCount() {
-    await chrome.storage.local.remove("upgradePromptCount");
-    console.log("UsageTracker: Upgrade prompt count reset");
+    try {
+      if (!chrome?.storage?.local) return;
+      await chrome.storage.local.remove("upgradePromptCount");
+      console.log("UsageTracker: Upgrade prompt count reset");
+    } catch (error) {
+      console.warn("UsageTracker: Error resetting upgrade prompt count", error);
+    }
   }
 
   /**
    * Increment usage counter for today
    */
   static async incrementUsage() {
-    const today = this.getToday();
-    const result = await chrome.storage.local.get("usageData");
-    const usageData = result.usageData || {};
+    try {
+      if (!chrome?.storage?.local) return;
+      const today = this.getToday();
+      const result = await chrome.storage.local.get("usageData");
+      const usageData = result.usageData || {};
 
-    // Increment today's count
-    usageData[today] = (usageData[today] || 0) + 1;
+      // Increment today's count
+      usageData[today] = (usageData[today] || 0) + 1;
 
-    // Clean up old dates (keep last 7 days)
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 days ago
-    Object.keys(usageData).forEach((date) => {
-      const dateTime = new Date(date).getTime();
-      if (dateTime < cutoff) {
-        delete usageData[date];
-      }
-    });
+      // Clean up old dates (keep last 7 days)
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 days ago
+      Object.keys(usageData).forEach((date) => {
+        const dateTime = new Date(date).getTime();
+        if (dateTime < cutoff) {
+          delete usageData[date];
+        }
+      });
 
-    await chrome.storage.local.set({ usageData: usageData });
-    console.log(
-      `UsageTracker: Incremented usage for ${today}. Total: ${usageData[today]}`
-    );
+      await chrome.storage.local.set({ usageData: usageData });
+      console.log(
+        `UsageTracker: Incremented usage for ${today}. Total: ${usageData[today]}`
+      );
+    } catch (error) {
+      console.warn("UsageTracker: Error incrementing usage", error);
+    }
   }
 
   /**
@@ -142,10 +185,16 @@ class UsageTracker {
    * @returns {Promise<number>} Number of tooltip views today
    */
   static async getTodayUsage() {
-    const today = this.getToday();
-    const result = await chrome.storage.local.get("usageData");
-    const usageData = result.usageData || {};
-    return usageData[today] || 0;
+    try {
+      if (!chrome?.storage?.local) return 0;
+      const today = this.getToday();
+      const result = await chrome.storage.local.get("usageData");
+      const usageData = result.usageData || {};
+      return usageData[today] || 0;
+    } catch (error) {
+      console.warn("UsageTracker: Error getting today's usage", error);
+      return 0;
+    }
   }
 
   /**
@@ -158,40 +207,47 @@ class UsageTracker {
   }
 
   /**
-   * Check if user is a Pro user
-   * @returns {Promise<boolean>} True if Pro user
+   * Check if user is a Pro user (has valid license)
+   * @returns {Promise<boolean>} True if user is Pro
    */
   static async isProUser() {
-    const result = await chrome.storage.sync.get("licenseKey");
-    const licenseKey = result.licenseKey;
+    try {
+      // Use GumroadAPI to check license status
+      if (typeof window !== "undefined" && window.GumroadAPI) {
+        const status = await window.GumroadAPI.checkLicenseStatus();
+        return status.isPro;
+      }
 
-    if (!licenseKey) {
+      // Fallback: check storage directly (for background script context)
+      // In background script, we need to use chrome.storage directly
+      if (!chrome?.storage?.sync) {
+        // Extension context invalidated - default to false (not Pro)
+        return false;
+      }
+
+      const { licenseStatus } = await chrome.storage.sync.get("licenseStatus");
+      return licenseStatus === "active";
+    } catch (error) {
+      // Extension context invalidated or other error - default to false (not Pro)
+      console.warn(
+        "UsageTracker: Error checking Pro status, defaulting to free",
+        error
+      );
       return false;
     }
-
-    // Validate license (will be implemented in next prompt)
-    const isValid = await this.validateLicense(licenseKey);
-    return isValid;
-  }
-
-  /**
-   * Validate license key
-   * @param {string} licenseKey - License key to validate
-   * @returns {Promise<boolean>} True if license is valid
-   */
-  static async validateLicense(licenseKey) {
-    // Placeholder - will implement in Prompt 18 (Gumroad integration)
-    // For now, check if license status is stored locally
-    const result = await chrome.storage.local.get("licenseStatus");
-    return result.licenseStatus === "active";
   }
 
   /**
    * Reset usage data (for testing or admin purposes)
    */
   static async resetUsage() {
-    await chrome.storage.local.remove("usageData");
-    console.log("UsageTracker: Usage data reset");
+    try {
+      if (!chrome?.storage?.local) return;
+      await chrome.storage.local.remove("usageData");
+      console.log("UsageTracker: Usage data reset");
+    } catch (error) {
+      console.warn("UsageTracker: Error resetting usage", error);
+    }
   }
 
   /**
@@ -199,46 +255,88 @@ class UsageTracker {
    * @returns {Promise<Object>} Usage stats
    */
   static async getUsageStats() {
-    const result = await chrome.storage.local.get("usageData");
-    const usageData = result.usageData || {};
-    const today = this.getToday();
-    const todayUsage = usageData[today] || 0;
-    const isPro = await this.isProUser();
+    try {
+      if (!chrome?.storage?.local) {
+        return {
+          today: 0,
+          limit: this.FREE_TIER_LIMIT,
+          remaining: this.FREE_TIER_LIMIT,
+          isPro: false,
+          allTime: 0,
+        };
+      }
+      const result = await chrome.storage.local.get("usageData");
+      const usageData = result.usageData || {};
+      const today = this.getToday();
+      const todayUsage = usageData[today] || 0;
+      const isPro = await this.isProUser();
 
-    return {
-      today: todayUsage,
-      limit: this.FREE_TIER_LIMIT,
-      remaining: Math.max(0, this.FREE_TIER_LIMIT - todayUsage),
-      isPro: isPro,
-      allTime: Object.values(usageData).reduce((sum, count) => sum + count, 0),
-    };
+      return {
+        today: todayUsage,
+        limit: this.FREE_TIER_LIMIT,
+        remaining: Math.max(0, this.FREE_TIER_LIMIT - todayUsage),
+        isPro: isPro,
+        allTime: Object.values(usageData).reduce(
+          (sum, count) => sum + count,
+          0
+        ),
+      };
+    } catch (error) {
+      console.warn("UsageTracker: Error getting usage stats", error);
+      return {
+        today: 0,
+        limit: this.FREE_TIER_LIMIT,
+        remaining: this.FREE_TIER_LIMIT,
+        isPro: false,
+        allTime: 0,
+      };
+    }
   }
 
   /**
-   * Increment upgrade prompt count
+   * Increment upgrade prompt count (duplicate - keeping the one with error handling)
    */
   static async incrementUpgradePromptCount() {
-    const result = await chrome.storage.local.get("upgradePromptCount");
-    const count = (result.upgradePromptCount || 0) + 1;
-    await chrome.storage.local.set({ upgradePromptCount: count });
-    console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
+    try {
+      if (!chrome?.storage?.local) return;
+      const result = await chrome.storage.local.get("upgradePromptCount");
+      const count = (result.upgradePromptCount || 0) + 1;
+      await chrome.storage.local.set({ upgradePromptCount: count });
+      console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
+    } catch (error) {
+      console.warn(
+        "UsageTracker: Error incrementing upgrade prompt count",
+        error
+      );
+    }
   }
 
   /**
-   * Get upgrade prompt count
+   * Get upgrade prompt count (duplicate - keeping the one with error handling)
    * @returns {Promise<number>} Number of times upgrade prompt was shown
    */
   static async getUpgradePromptCount() {
-    const result = await chrome.storage.local.get("upgradePromptCount");
-    return result.upgradePromptCount || 0;
+    try {
+      if (!chrome?.storage?.local) return 0;
+      const result = await chrome.storage.local.get("upgradePromptCount");
+      return result.upgradePromptCount || 0;
+    } catch (error) {
+      console.warn("UsageTracker: Error getting upgrade prompt count", error);
+      return 0;
+    }
   }
 
   /**
-   * Reset upgrade prompt count (for testing)
+   * Reset upgrade prompt count (for testing) (duplicate - keeping the one with error handling)
    */
   static async resetUpgradePromptCount() {
-    await chrome.storage.local.remove("upgradePromptCount");
-    console.log("UsageTracker: Upgrade prompt count reset");
+    try {
+      if (!chrome?.storage?.local) return;
+      await chrome.storage.local.remove("upgradePromptCount");
+      console.log("UsageTracker: Upgrade prompt count reset");
+    } catch (error) {
+      console.warn("UsageTracker: Error resetting upgrade prompt count", error);
+    }
   }
 
   /**
@@ -246,29 +344,53 @@ class UsageTracker {
    * @param {boolean} disabled - True to disable tracking
    */
   static async setTrackingDisabled(disabled) {
-    await chrome.storage.local.set({ disableUsageTracking: disabled });
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(
-        "mondayQuickPeek_disableUsageTracking",
-        disabled ? "true" : "false"
+    try {
+      if (chrome?.storage?.local) {
+        await chrome.storage.local.set({ disableUsageTracking: disabled });
+      }
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(
+          "mondayQuickPeek_disableUsageTracking",
+          disabled ? "true" : "false"
+        );
+      }
+      console.log(
+        `UsageTracker: Usage tracking ${disabled ? "disabled" : "enabled"}`
       );
+    } catch (error) {
+      console.warn("UsageTracker: Error setting tracking disabled", error);
     }
-    console.log(
-      `UsageTracker: Usage tracking ${disabled ? "disabled" : "enabled"}`
-    );
   }
 
   /**
    * Reset all usage tracking data (for testing)
    */
   static async resetAll() {
-    await this.resetUsage();
-    await this.resetUpgradePromptCount();
-    await chrome.storage.local.remove("disableUsageTracking");
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem("mondayQuickPeek_disableUsageTracking");
+    try {
+      await this.resetUsage();
+      await this.resetUpgradePromptCount();
+      if (chrome?.storage?.local) {
+        await chrome.storage.local.remove("disableUsageTracking");
+      }
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("mondayQuickPeek_disableUsageTracking");
+      }
+      // Also clear sessionStorage banner dismissals
+      if (typeof sessionStorage !== "undefined") {
+        const today = this.getToday();
+        sessionStorage.removeItem(`bannerDismissed_${today}`);
+        // Clear all banner dismissals (in case of multiple days)
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith("bannerDismissed_")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+      console.log("UsageTracker: All usage data reset");
+    } catch (error) {
+      console.warn("UsageTracker: Error resetting all data", error);
+      throw error; // Re-throw so popup can handle it
     }
-    console.log("UsageTracker: All usage data reset");
   }
 }
 

@@ -6,7 +6,7 @@
 
   "permissions": ["storage", "activeTab"],
 
-  "host_permissions": ["https://*.monday.com/*"],
+  "host_permissions": ["https://*.monday.com/*", "https://api.gumroad.com/*"],
 
   "background": {
     "service_worker": "scripts/background.js"
@@ -16,6 +16,7 @@
     {
       "matches": ["https://*.monday.com/*"],
       "js": [
+        "scripts/config.js",
         "scripts/errorHandler.js",
         "scripts/usageTracker.js",
         "scripts/content.js"

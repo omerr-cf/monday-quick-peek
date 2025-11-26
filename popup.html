@@ -202,6 +202,40 @@
         box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
       }
 
+      /* Pro License Section Styles */
+      .pro-badge.active {
+        animation: pulse-badge 2s infinite;
+      }
+
+      @keyframes pulse-badge {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      #upgradeBtn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+      }
+
+      #activateLicenseBtn:hover {
+        background: #4f46e5 !important;
+      }
+
+      #deactivateLicenseBtn:hover {
+        background: #fee2e2 !important;
+        color: #991b1b !important;
+      }
+
+      #licenseKey:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+
       .save-button:active:not(:disabled) {
         transform: translateY(0);
       }
@@ -347,6 +381,92 @@
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
+
+      /* Custom Confirmation Modal */
+      .confirm-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(2px);
+      }
+
+      .confirm-modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 350px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: modalSlideIn 0.2s ease;
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .confirm-modal-content h3 {
+        margin: 0 0 12px 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #323338;
+      }
+
+      .confirm-modal-content p {
+        margin: 0 0 24px 0;
+        font-size: 14px;
+        color: #676879;
+        line-height: 1.5;
+      }
+
+      .confirm-modal-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .confirm-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .confirm-btn.cancel-btn {
+        background: #f3f4f6;
+        color: #323338;
+      }
+
+      .confirm-btn.cancel-btn:hover {
+        background: #e1e4e8;
+      }
+
+      .confirm-btn.ok-btn {
+        background: #6366f1;
+        color: white;
+      }
+
+      .confirm-btn.ok-btn:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+      }
     </style>
   </head>
   <body>
@@ -399,6 +519,214 @@
         </a>
       </div>
 
+      <!-- Pro License Section -->
+      <div
+        class="pro-section"
+        id="proSection"
+        style="
+          margin-top: 24px;
+          padding-top: 24px;
+          border-top: 2px solid #e1e4e8;
+        "
+      >
+        <div
+          class="section-header"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+          "
+        >
+          <h3
+            style="font-size: 16px; font-weight: 600; color: #323338; margin: 0"
+          >
+            🚀 Pro License
+          </h3>
+          <span
+            class="pro-badge"
+            id="proBadge"
+            style="
+              padding: 4px 12px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              background: #e1e4e8;
+              color: #676879;
+            "
+          >
+            FREE
+          </span>
+        </div>
+
+        <!-- Free User View -->
+        <div id="freeUserView" class="license-view">
+          <p
+            class="upgrade-message"
+            style="
+              font-size: 13px;
+              color: #676879;
+              line-height: 1.6;
+              margin-bottom: 16px;
+            "
+          >
+            Upgrade to Pro for unlimited tooltip views, advanced search, and
+            more!
+          </p>
+          <button
+            class="primary-btn"
+            id="upgradeBtn"
+            style="
+              width: 100%;
+              padding: 12px 20px;
+              font-size: 14px;
+              font-weight: 600;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              margin-bottom: 20px;
+              box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            "
+          >
+            Upgrade to Pro - $9/month
+          </button>
+
+          <div
+            class="license-input-container"
+            style="padding-top: 16px; border-top: 1px solid #f3f4f6"
+          >
+            <label
+              for="licenseKey"
+              style="
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                color: #323338;
+                margin-bottom: 8px;
+              "
+            >
+              Already purchased? Enter license key:
+            </label>
+            <p
+              style="
+                font-size: 11px;
+                color: #676879;
+                margin: -4px 0 8px 0;
+                line-height: 1.4;
+              "
+            >
+              💡 Find your license key in your Gumroad purchase confirmation
+              email (not the order ID)
+            </p>
+            <div style="display: flex; gap: 8px">
+              <input
+                type="text"
+                id="licenseKey"
+                placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                style="
+                  flex: 1;
+                  padding: 10px 14px;
+                  font-size: 13px;
+                  font-family: monospace;
+                  color: #323338;
+                  background: #ffffff;
+                  border: 2px solid #e1e4e8;
+                  border-radius: 6px;
+                  outline: none;
+                  transition: border-color 0.2s ease;
+                "
+              />
+              <button
+                id="activateLicenseBtn"
+                style="
+                  padding: 10px 16px;
+                  font-size: 13px;
+                  font-weight: 600;
+                  background: #6366f1;
+                  color: white;
+                  border: none;
+                  border-radius: 6px;
+                  cursor: pointer;
+                  transition: background 0.2s ease;
+                  white-space: nowrap;
+                "
+              >
+                Activate
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro User View -->
+        <div id="proUserView" class="license-view" style="display: none">
+          <div
+            class="pro-active"
+            style="
+              text-align: center;
+              padding: 20px;
+              background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+              border-radius: 8px;
+              border: 1px solid #a7f3d0;
+            "
+          >
+            <div
+              class="success-icon"
+              style="font-size: 32px; margin-bottom: 12px"
+            >
+              ✅
+            </div>
+            <h4
+              style="
+                font-size: 16px;
+                font-weight: 700;
+                color: #065f46;
+                margin: 0 0 8px 0;
+              "
+            >
+              Pro License Active
+            </h4>
+            <p
+              class="license-email"
+              id="licenseEmail"
+              style="
+                font-size: 13px;
+                color: #047857;
+                margin: 0 0 12px 0;
+                word-break: break-all;
+              "
+            ></p>
+            <p
+              class="license-info"
+              style="font-size: 12px; color: #065f46; margin: 0 0 16px 0"
+            >
+              Enjoy unlimited tooltip views and all Pro features!
+            </p>
+            <button
+              class="secondary-btn"
+              id="deactivateLicenseBtn"
+              style="
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: 600;
+                background: white;
+                color: #991b1b;
+                border: 1px solid #fecaca;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+              "
+            >
+              Deactivate License
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Dev Mode Section -->
       <div
         class="dev-section"
@@ -445,6 +773,7 @@
           <button
             id="resetUsageBtn"
             class="dev-button"
+            type="button"
             style="
               padding: 8px 16px;
               background: #f3f4f6;
@@ -465,6 +794,22 @@
       <div class="loading-spinner"></div>
     </div>
 
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="confirm-modal" style="display: none">
+      <div class="confirm-modal-content">
+        <h3 id="confirmModalTitle">Confirm</h3>
+        <p id="confirmModalMessage"></p>
+        <div class="confirm-modal-buttons">
+          <button id="confirmModalCancel" class="confirm-btn cancel-btn">
+            Cancel
+          </button>
+          <button id="confirmModalOk" class="confirm-btn ok-btn">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="scripts/config.js"></script>
+    <script src="scripts/gumroadAPI.js"></script>
     <script src="scripts/popup.js"></script>
   </body>
 </html>
