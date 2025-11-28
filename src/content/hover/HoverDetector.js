@@ -21,11 +21,12 @@
 
   const HoverDetector = {
     /**
-     * Find all task rows and attach hover listeners
-     * @returns {number} Number of rows found
+     * Find all task rows and attach hover listeners to updates column
+     * @returns {number} Number of update targets found
      */
     attachHoverListeners(handlers) {
-      const selectors = [
+      // Row selectors (find task rows)
+      const rowSelectors = [
         '.pulse-component[role="list"]',
         '[id^="row-pulse-"]',
         '[class*="pulse-component"][role="list"]',
@@ -41,8 +42,26 @@
         "[data-item-id]",
       ];
 
+      // Updates column selectors (find updates icon/column within row)
+      // Based on Monday.com's actual DOM structure
+      const updatesSelectors = [
+        ".name-cell-component-side-cell",
+        ".monday-name-cell-conversation-wrapper",
+        '[aria-label="Start conversation"]',
+        '[aria-label*="conversation"]',
+        ".conversation-cta-module_withUpdates__lLlWU",
+        ".number-indicator-module_wrapper__p5upC",
+        // Generic fallbacks
+        '[class*="conversation"]',
+        '[class*="updates"]',
+        '[class*="notes"]',
+        '[data-column-type="updates"]',
+        '[aria-label*="updates"]',
+        '[aria-label*="Updates"]',
+      ];
+
       let rows = [];
-      selectors.forEach((selector) => {
+      rowSelectors.forEach((selector) => {
         try {
           const found = document.querySelectorAll(selector);
           if (found.length > 0) {
@@ -70,24 +89,79 @@
         return 0;
       }
 
-      // Attach listeners to each row
+      // Find updates column within each row and attach listeners
       let attachedCount = 0;
-      rows.forEach((row, index) => {
+      rows.forEach((row) => {
         if (row.dataset.quickPeekListener === "true") {
           return;
         }
 
+        // Try to find the updates column within this row
+        let updatesTarget = null;
+        for (const selector of updatesSelectors) {
+          try {
+            updatesTarget = row.querySelector(selector);
+            if (updatesTarget) {
+              break;
+            }
+          } catch (e) {
+            // Selector failed, try next one
+          }
+        }
+
+        // If no specific updates column found, fall back to entire row
+        if (!updatesTarget) {
+          updatesTarget = row;
+        }
+
+        // Mark row as processed
         row.dataset.quickPeekListener = "true";
 
-        // Add hover listeners
-        if (handlers.onMouseEnter) {
-          row.addEventListener("mouseenter", handlers.onMouseEnter);
-        }
-        if (handlers.onMouseLeave) {
-          row.addEventListener("mouseleave", handlers.onMouseLeave);
-        }
-        if (handlers.onMouseMove) {
-          row.addEventListener("mousemove", handlers.onMouseMove);
+        // Store reference to parent row on the target element
+        if (updatesTarget !== row) {
+          updatesTarget.dataset.quickPeekParentRow = "true";
+          // Create custom event handlers that pass the row reference
+          const createHandler = (handler) => {
+            return (event) => {
+              // Override currentTarget to always be the row
+              Object.defineProperty(event, "currentTarget", {
+                value: row,
+                writable: false,
+              });
+              handler.call(updatesTarget, event);
+            };
+          };
+
+          // Add hover listeners to updates target
+          if (handlers.onMouseEnter) {
+            updatesTarget.addEventListener(
+              "mouseenter",
+              createHandler(handlers.onMouseEnter)
+            );
+          }
+          if (handlers.onMouseLeave) {
+            updatesTarget.addEventListener(
+              "mouseleave",
+              createHandler(handlers.onMouseLeave)
+            );
+          }
+          if (handlers.onMouseMove) {
+            updatesTarget.addEventListener(
+              "mousemove",
+              createHandler(handlers.onMouseMove)
+            );
+          }
+        } else {
+          // Fall back to row-level listeners
+          if (handlers.onMouseEnter) {
+            updatesTarget.addEventListener("mouseenter", handlers.onMouseEnter);
+          }
+          if (handlers.onMouseLeave) {
+            updatesTarget.addEventListener("mouseleave", handlers.onMouseLeave);
+          }
+          if (handlers.onMouseMove) {
+            updatesTarget.addEventListener("mousemove", handlers.onMouseMove);
+          }
         }
 
         attachedCount++;
