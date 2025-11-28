@@ -6,7 +6,7 @@
     "build": "npm run clean && npm run copy && npm run validate",
     "build:package": "npm run build && npm run package",
     "clean": "rm -rf dist",
-    "copy": "mkdir -p dist && cp -r manifest.json popup.html scripts styles icons dist/",
+    "copy": "mkdir -p dist && cp -r manifest.json popup.html src icons dist/",
     "validate": "node scripts/validate-build.js",
     "package": "cd dist && zip -r ../monday-quick-peek.zip . -x '*.DS_Store' && cd .. && echo '✅ Package created: monday-quick-peek.zip'",
     "package:win": "cd dist && powershell Compress-Archive -Path * -DestinationPath ../monday-quick-peek.zip && cd .. && echo '✅ Package created: monday-quick-peek.zip'",

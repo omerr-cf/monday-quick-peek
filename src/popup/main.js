@@ -32,7 +32,7 @@ let originalButtonText = "";
  * Initialize popup when DOM is ready
  */
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Monday Quick Peek: Popup loaded");
+
 
   initializeElements();
   loadSettings();
@@ -41,16 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Wait a bit for GumroadAPI to load, then initialize license UI
   setTimeout(() => {
     if (window.GumroadAPI) {
-      console.log("Popup: GumroadAPI loaded, initializing license UI");
       initializeLicenseUI();
     } else {
-      console.warn("Popup: GumroadAPI not found, retrying...");
       // Retry after a short delay
       setTimeout(() => {
         if (window.GumroadAPI) {
           initializeLicenseUI();
         } else {
-          console.error("Popup: GumroadAPI still not available after retry");
         }
       }, 500);
     }
@@ -76,7 +73,7 @@ function initializeElements() {
     resetUsageBtn.style.pointerEvents = "auto";
     resetUsageBtn.style.opacity = "1";
     resetUsageBtn.style.cursor = "pointer";
-    console.log("[RESET] Reset button initialized and enabled");
+
   }
 
   // Pro License elements
@@ -113,7 +110,6 @@ async function loadSettings() {
       updateConnectionStatus("not-connected");
     }
   } catch (error) {
-    console.error("Popup: Error loading settings", error);
     showStatus("Error loading settings", "error");
   }
 }
@@ -175,7 +171,7 @@ function attachEventListeners() {
     resetUsageBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log("[RESET] ===== RESET BUTTON CLICKED =====");
+
       // Visual feedback
       resetUsageBtn.style.background = "#d1d5db";
       resetUsageBtn.style.transform = "scale(0.98)";
@@ -199,7 +195,6 @@ function attachEventListeners() {
         window.CONFIG?.gumroad?.productUrl || window.GumroadAPI?.PRODUCT_URL;
 
       if (!gumroadUrl) {
-        console.error("Popup: Gumroad URL not found in CONFIG or GumroadAPI!");
         showStatus("Configuration error: Gumroad URL not found", "error");
         return;
       }
@@ -290,7 +285,6 @@ async function handleSaveAndTest() {
       setButtonNormal();
     }
   } catch (error) {
-    console.error("Popup: Error testing API key", error);
     handleApiError(error);
     updateConnectionStatus("not-connected");
     setButtonNormal();
@@ -354,7 +348,6 @@ async function testApiKey(apiKey) {
 
     // Check if we got user data (means API key is valid)
     if (data.data && data.data.me) {
-      console.log("Popup: API key validated successfully", data.data.me);
       return true;
     }
 
@@ -583,7 +576,6 @@ async function loadDevSettings() {
       disableTrackingCheckbox.checked = result.disableUsageTracking === true;
     }
   } catch (error) {
-    console.error("Popup: Error loading dev settings", error);
   }
 }
 
@@ -609,7 +601,6 @@ async function handleTrackingToggle() {
     showStatus(`Usage tracking ${isDisabled ? "disabled" : "enabled"}`, "info");
     setTimeout(() => hideStatus(), 2000);
   } catch (error) {
-    console.error("Popup: Error toggling tracking", error);
     showStatus("Failed to update setting", "error");
   }
 }
@@ -618,11 +609,11 @@ async function handleTrackingToggle() {
  * Handle reset usage data
  */
 async function handleResetUsage() {
-  console.log("[RESET] ===== handleResetUsage FUNCTION CALLED =====");
-  console.log("[RESET] Function is executing...");
+
+
 
   // No confirmation needed - reset immediately when clicked
-  console.log("[RESET] ✅ Proceeding with reset immediately...");
+
 
   // Disable button during reset (but ensure it starts enabled)
   if (resetUsageBtn) {
@@ -635,22 +626,22 @@ async function handleResetUsage() {
     // Now disable for the operation
     resetUsageBtn.disabled = true;
     resetUsageBtn.textContent = "Resetting...";
-    console.log("[RESET] Button disabled for reset operation");
+
   }
 
   try {
-    console.log("[RESET] Checking for UsageTracker...");
+
 
     if (window.UsageTracker) {
-      console.log("[RESET] UsageTracker found, calling resetAll()");
+
       await window.UsageTracker.resetAll();
-      console.log("[RESET] resetAll() completed");
+
       showStatus(
         "Usage data reset successfully! Reload the page to see changes.",
         "success"
       );
     } else {
-      console.log("[RESET] UsageTracker not found, using fallback");
+
       // Fallback: manually reset
       await chrome.storage.local.remove([
         "usageData",
@@ -668,17 +659,17 @@ async function handleResetUsage() {
           }
         });
       }
-      console.log("[RESET] Fallback reset completed");
+
       showStatus(
         "Usage data reset successfully! Reload the page to see changes.",
         "success"
       );
     }
 
-    console.log("[RESET] Reset completed successfully");
+
     setTimeout(() => hideStatus(), 3000);
   } catch (error) {
-    console.error("[RESET] Error resetting usage data", error);
+
     showStatus(`Failed to reset usage data: ${error.message}`, "error");
   } finally {
     // Re-enable button
@@ -686,7 +677,7 @@ async function handleResetUsage() {
       resetUsageBtn.disabled = false;
       resetUsageBtn.textContent = "Reset Usage Data";
     }
-    console.log("[RESET] Button re-enabled");
+
   }
 }
 
@@ -700,18 +691,14 @@ async function handleResetUsage() {
  * Initialize Pro License UI
  */
 async function initializeLicenseUI() {
-  console.log("Popup: initializeLicenseUI called");
 
   if (!window.GumroadAPI) {
-    console.error("Popup: GumroadAPI not loaded");
     showStatus("Gumroad API not loaded. Please reload the extension.", "error");
     return;
   }
 
   try {
-    console.log("Popup: Checking license status...");
     const status = await window.GumroadAPI.checkLicenseStatus();
-    console.log("Popup: License status:", status);
 
     if (status.isPro) {
       showProView();
@@ -719,7 +706,6 @@ async function initializeLicenseUI() {
       showFreeView();
     }
   } catch (error) {
-    console.error("Popup: Error initializing license UI", error);
     showFreeView(); // Default to free view on error
   }
 }
@@ -771,11 +757,9 @@ function showFreeView() {
  * Handle license activation
  */
 async function handleActivateLicense() {
-  console.log("Popup: handleActivateLicense called");
 
   // Check if GumroadAPI is loaded
   if (!window.GumroadAPI) {
-    console.error("Popup: GumroadAPI not found on window object");
     showStatus(
       "Gumroad API not available. Please reload the extension.",
       "error"
@@ -807,22 +791,30 @@ async function handleActivateLicense() {
   showStatus("Validating license...", "info");
 
   try {
-    console.log("Popup: Calling GumroadAPI.saveLicense");
     const result = await window.GumroadAPI.saveLicense(licenseKey);
-    console.log("Popup: License validation result:", result);
 
     if (result.success) {
       showStatus(result.message, "success");
+
+      // Notify all tabs that Pro is activated so they can hide the banner
+      try {
+        const tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+          chrome.tabs.sendMessage(tab.id, { action: "proLicenseActivated" }).catch(() => {
+            // Ignore errors for tabs that don't have content script
+          });
+        }
+      } catch (error) {
+      }
+
       setTimeout(() => {
         initializeLicenseUI();
         hideStatus();
       }, 1500);
     } else {
-      console.error("Popup: License validation failed:", result.message);
       showStatus(result.message, "error");
     }
   } catch (error) {
-    console.error("Popup: Error activating license", error);
     showStatus(
       `Failed to activate license: ${error.message || "Unknown error"}`,
       "error"
@@ -840,10 +832,8 @@ async function handleActivateLicense() {
  * Handle license deactivation
  */
 async function handleDeactivateLicense() {
-  console.log("Popup: handleDeactivateLicense called");
 
   if (!window.GumroadAPI) {
-    console.error("Popup: GumroadAPI not available");
     showStatus("Gumroad API not available", "error");
     return;
   }
@@ -854,17 +844,13 @@ async function handleDeactivateLicense() {
     "Are you sure you want to deactivate your Pro license? You'll lose access to Pro features and unlimited tooltip views."
   );
 
-  console.log("Popup: Deactivate confirmation result:", confirmed);
 
   if (!confirmed) {
-    console.log("Popup: User cancelled deactivation");
     return;
   }
 
   try {
-    console.log("Popup: Calling GumroadAPI.removeLicense()");
     await window.GumroadAPI.removeLicense();
-    console.log("Popup: License removed successfully");
 
     showStatus("License deactivated", "info");
     showFreeView();
@@ -874,7 +860,6 @@ async function handleDeactivateLicense() {
       hideStatus();
     }, 2000);
   } catch (error) {
-    console.error("Popup: Error deactivating license", error);
     showStatus("Failed to deactivate license. Please try again.", "error");
   }
 }
@@ -910,7 +895,7 @@ function showConfirmModal(title, message) {
 
     // Clean up previous listeners
     const okHandler = () => {
-      console.log("[CONFIRM] User clicked OK");
+
       modal.style.display = "none";
       modalOk.removeEventListener("click", okHandler);
       modalCancel.removeEventListener("click", cancelHandler);
@@ -918,7 +903,7 @@ function showConfirmModal(title, message) {
     };
 
     const cancelHandler = () => {
-      console.log("[CONFIRM] User clicked Cancel");
+
       modal.style.display = "none";
       modalOk.removeEventListener("click", okHandler);
       modalCancel.removeEventListener("click", cancelHandler);
@@ -932,7 +917,7 @@ function showConfirmModal(title, message) {
     // Close on backdrop click
     const backdropHandler = (e) => {
       if (e.target === modal) {
-        console.log("[CONFIRM] User clicked backdrop");
+
         modal.style.display = "none";
         modal.removeEventListener("click", backdropHandler);
         modalOk.removeEventListener("click", okHandler);

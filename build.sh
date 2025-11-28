@@ -26,8 +26,7 @@ mkdir -p dist
 echo -e "${YELLOW}Copying files...${NC}"
 cp manifest.json dist/
 cp popup.html dist/
-cp -r scripts dist/
-cp -r styles dist/
+cp -r src dist/
 cp -r icons dist/
 
 # Validate build
@@ -37,8 +36,8 @@ if [ ! -f "dist/manifest.json" ]; then
   exit 1
 fi
 
-if [ ! -d "dist/scripts" ]; then
-  echo -e "${RED}❌ Error: scripts directory not found in dist${NC}"
+if [ ! -d "dist/src" ]; then
+  echo -e "${RED}❌ Error: src directory not found in dist${NC}"
   exit 1
 fi
 

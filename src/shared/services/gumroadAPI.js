@@ -78,10 +78,7 @@ class GumroadAPI {
           let errorText = "";
           try {
             errorText = await response.text();
-            console.error("GumroadAPI: Server error response:", errorText);
-          } catch (e) {
-            console.error("GumroadAPI: Could not read error response", e);
-          }
+          } catch (e) {}
 
           // Check if it's a product permalink issue
           if (errorText && errorText.includes("product")) {
@@ -113,7 +110,6 @@ class GumroadAPI {
           JSON.stringify(data, null, 2)
         );
       } catch (parseError) {
-        console.error("GumroadAPI: Failed to parse JSON response", parseError);
         return {
           valid: false,
           error: "Invalid response from Gumroad API. Please try again.",
@@ -122,7 +118,6 @@ class GumroadAPI {
 
       // Check if API returned an error message
       if (!data.success) {
-        console.error("GumroadAPI: API returned success: false", data);
         // Provide more detailed error message
         const errorMessage = data.message || "License key validation failed.";
 
@@ -153,23 +148,16 @@ class GumroadAPI {
         // For subscriptions, they are null when active, or have dates when cancelled/failed
         const cancelledAt = data.purchase.subscription_cancelled_at;
         const failedAt = data.purchase.subscription_failed_at;
-        
+
         // Subscription is active if:
         // - Fields don't exist (one-time purchase) OR
         // - Fields are null (active subscription) OR
         // - Fields are empty strings
-        const isActive = 
-          (cancelledAt === null || cancelledAt === undefined || cancelledAt === "") &&
+        const isActive =
+          (cancelledAt === null ||
+            cancelledAt === undefined ||
+            cancelledAt === "") &&
           (failedAt === null || failedAt === undefined || failedAt === "");
-
-        console.log("GumroadAPI: License validation result:", {
-          valid: true,
-          active: isActive,
-          cancelledAt,
-          failedAt,
-          email: data.purchase.email,
-          test: data.purchase.test,
-        });
 
         return {
           valid: true,
@@ -187,7 +175,6 @@ class GumroadAPI {
           "Invalid license key. Please check your purchase email for the license key.",
       };
     } catch (error) {
-      console.error("GumroadAPI: License validation failed", error);
       // Handle network errors
       if (
         error.message.includes("Failed to fetch") ||
@@ -213,8 +200,6 @@ class GumroadAPI {
   static async saveLicense(licenseKey) {
     const validation = await this.validateLicense(licenseKey);
 
-    console.log("GumroadAPI: saveLicense validation result:", validation);
-
     // Accept license if it's valid, even if active is false (one-time purchases don't have subscription fields)
     // Only reject if there's an explicit error
     if (validation.valid) {
@@ -225,6 +210,22 @@ class GumroadAPI {
         licensedEmail: validation.email,
         lastValidated: Date.now(),
       });
+
+      // Reset upgrade prompt count when Pro is activated
+      // This ensures Pro users never see upgrade prompts
+      if (window.UsageTracker) {
+        try {
+          await window.UsageTracker.resetUpgradePromptCount();
+          console.log(
+            "GumroadAPI: Reset upgrade prompt count after Pro activation"
+          );
+        } catch (error) {
+          console.warn(
+            "GumroadAPI: Error resetting upgrade prompt count",
+            error
+          );
+        }
+      }
 
       return {
         success: true,
@@ -294,6 +295,26 @@ class GumroadAPI {
       "licensedEmail",
       "lastValidated",
     ]);
+
+    // Clear banner dismissal when deactivated so banner can show again
+    // Send message to content script to clear banner dismissal
+    try {
+      const tabs = await chrome.tabs.query({ url: "https://*.monday.com/*" });
+      tabs.forEach((tab) => {
+        chrome.tabs
+          .sendMessage(tab.id, {
+            action: "clearBannerDismissal",
+          })
+          .catch(() => {
+            // Tab might not have content script loaded, ignore
+          });
+      });
+    } catch (error) {
+      console.warn(
+        "GumroadAPI: Error sending clearBannerDismissal message",
+        error
+      );
+    }
   }
 
   /**

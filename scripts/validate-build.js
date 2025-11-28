@@ -11,18 +11,21 @@ const DIST_DIR = path.join(__dirname, "..", "dist");
 const REQUIRED_FILES = [
   "manifest.json",
   "popup.html",
-  "scripts/content.js",
-  "scripts/background.js",
-  "scripts/popup.js",
-  "scripts/errorHandler.js",
-  "scripts/storage.js",
-  "styles/content.css",
+  "src/background/service-worker.js",
+  "src/content/main.js",
+  "src/popup/main.js",
+  "src/config/config.js",
+  "src/shared/services/errorHandler.js",
+  "src/shared/services/gumroadAPI.js",
+  "src/shared/services/storage.js",
+  "src/shared/services/usageTracker.js",
+  "src/styles/content/content.css",
   "icons/icon16.png",
   "icons/icon48.png",
   "icons/icon128.png",
 ];
 
-const REQUIRED_DIRS = ["scripts", "styles", "icons"];
+const REQUIRED_DIRS = ["src", "icons"];
 
 function validateBuild() {
   console.log("🔍 Validating build...\n");
@@ -77,7 +80,7 @@ function validateBuild() {
   console.log("\n🔍 Checking for common issues...");
 
   // Check for console.logs (informational, not blocking)
-  const contentScript = path.join(DIST_DIR, "scripts", "content.js");
+  const contentScript = path.join(DIST_DIR, "src", "content", "main.js");
   if (fs.existsSync(contentScript)) {
     const content = fs.readFileSync(contentScript, "utf8");
     const logCount = (content.match(/console\.log/g) || []).length;
@@ -91,10 +94,10 @@ function validateBuild() {
   // Check file sizes
   console.log("\n📊 File sizes:");
   const files = [
-    "scripts/content.js",
-    "scripts/background.js",
-    "scripts/popup.js",
-    "styles/content.css",
+    "src/content/main.js",
+    "src/background/service-worker.js",
+    "src/popup/main.js",
+    "src/styles/content/content.css",
   ];
   for (const file of files) {
     const filePath = path.join(DIST_DIR, file);

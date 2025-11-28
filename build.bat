@@ -17,8 +17,7 @@ REM Copy required files
 echo Copying files...
 copy manifest.json dist\ >nul
 copy popup.html dist\ >nul
-xcopy /E /I /Y scripts dist\scripts >nul
-xcopy /E /I /Y styles dist\styles >nul
+xcopy /E /I /Y src dist\src >nul
 xcopy /E /I /Y icons dist\icons >nul
 
 REM Validate build
@@ -28,8 +27,8 @@ if not exist "dist\manifest.json" (
   exit /b 1
 )
 
-if not exist "dist\scripts" (
-  echo ❌ Error: scripts directory not found in dist
+if not exist "dist\src" (
+  echo ❌ Error: src directory not found in dist
   exit /b 1
 )
 

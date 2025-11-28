@@ -110,9 +110,11 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       const result = await chrome.storage.local.get("upgradePromptCount");
-      const count = (result.upgradePromptCount || 0) + 1;
-      await chrome.storage.local.set({ upgradePromptCount: count });
-      console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
+      const oldCount = result.upgradePromptCount || 0;
+      const newCount = oldCount + 1;
+      await chrome.storage.local.set({ upgradePromptCount: newCount });
+      if (newCount >= this.MAX_UPGRADE_PROMPTS) {
+      }
     } catch (error) {
       console.warn(
         "UsageTracker: Error incrementing upgrade prompt count",
@@ -131,7 +133,6 @@ class UsageTracker {
       const result = await chrome.storage.local.get("upgradePromptCount");
       return result.upgradePromptCount || 0;
     } catch (error) {
-      console.warn("UsageTracker: Error getting upgrade prompt count", error);
       return 0;
     }
   }
@@ -143,9 +144,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("upgradePromptCount");
-      console.log("UsageTracker: Upgrade prompt count reset");
     } catch (error) {
-      console.warn("UsageTracker: Error resetting upgrade prompt count", error);
     }
   }
 
@@ -176,7 +175,6 @@ class UsageTracker {
         `UsageTracker: Incremented usage for ${today}. Total: ${usageData[today]}`
       );
     } catch (error) {
-      console.warn("UsageTracker: Error incrementing usage", error);
     }
   }
 
@@ -192,7 +190,6 @@ class UsageTracker {
       const usageData = result.usageData || {};
       return usageData[today] || 0;
     } catch (error) {
-      console.warn("UsageTracker: Error getting today's usage", error);
       return 0;
     }
   }
@@ -244,9 +241,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("usageData");
-      console.log("UsageTracker: Usage data reset");
     } catch (error) {
-      console.warn("UsageTracker: Error resetting usage", error);
     }
   }
 
@@ -282,7 +277,6 @@ class UsageTracker {
         ),
       };
     } catch (error) {
-      console.warn("UsageTracker: Error getting usage stats", error);
       return {
         today: 0,
         limit: this.FREE_TIER_LIMIT,
@@ -302,7 +296,6 @@ class UsageTracker {
       const result = await chrome.storage.local.get("upgradePromptCount");
       const count = (result.upgradePromptCount || 0) + 1;
       await chrome.storage.local.set({ upgradePromptCount: count });
-      console.log(`UsageTracker: Upgrade prompt shown ${count} times`);
     } catch (error) {
       console.warn(
         "UsageTracker: Error incrementing upgrade prompt count",
@@ -321,7 +314,6 @@ class UsageTracker {
       const result = await chrome.storage.local.get("upgradePromptCount");
       return result.upgradePromptCount || 0;
     } catch (error) {
-      console.warn("UsageTracker: Error getting upgrade prompt count", error);
       return 0;
     }
   }
@@ -333,9 +325,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("upgradePromptCount");
-      console.log("UsageTracker: Upgrade prompt count reset");
     } catch (error) {
-      console.warn("UsageTracker: Error resetting upgrade prompt count", error);
     }
   }
 
@@ -358,7 +348,6 @@ class UsageTracker {
         `UsageTracker: Usage tracking ${disabled ? "disabled" : "enabled"}`
       );
     } catch (error) {
-      console.warn("UsageTracker: Error setting tracking disabled", error);
     }
   }
 
@@ -386,9 +375,7 @@ class UsageTracker {
           }
         });
       }
-      console.log("UsageTracker: All usage data reset");
     } catch (error) {
-      console.warn("UsageTracker: Error resetting all data", error);
       throw error; // Re-throw so popup can handle it
     }
   }

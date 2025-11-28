@@ -306,7 +306,6 @@ class ErrorHandler {
   static showErrorUI(message, errorInfo, options = {}) {
     const tooltip = document.getElementById("quick-peek-tooltip");
     if (!tooltip) {
-      console.warn("ErrorHandler: Tooltip element not found");
       return;
     }
 
@@ -438,10 +437,6 @@ class ErrorHandler {
     const maxDelay = 30000; // 30 seconds max
     const delay = Math.min(backoffDelay, maxDelay);
 
-    console.log(
-      `ErrorHandler: Retrying ${context} (attempt ${attempt}/${maxRetries}) after ${delay}ms`
-    );
-
     // Show retry indicator
     this.showRetryIndicator(attempt, maxRetries, delay);
 
@@ -451,9 +446,7 @@ class ErrorHandler {
     try {
       // Execute retry callback
       await retryCallback();
-      console.log(`ErrorHandler: Retry successful for ${context}`);
     } catch (retryError) {
-      console.error(`ErrorHandler: Retry ${attempt} failed`, retryError);
       // Recursively retry
       await this.handleRetry(
         errorInfo,

@@ -30,15 +30,12 @@ const storage = {
       }
 
       await chrome.storage.sync.set({ apiKey: apiKey.trim() });
-      console.log("Storage: API key saved successfully");
 
       // Also save validation status
       await chrome.storage.sync.set({ apiKeyValid: true });
 
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to save API key", error);
-
       // Handle quota exceeded error
       if (error.message && error.message.includes("QUOTA")) {
         return {
@@ -64,7 +61,6 @@ const storage = {
       const result = await chrome.storage.sync.get("apiKey");
       return result.apiKey || null;
     } catch (error) {
-      console.error("Storage: Failed to get API key", error);
       return null;
     }
   },
@@ -76,10 +72,8 @@ const storage = {
   async clearApiKey() {
     try {
       await chrome.storage.sync.remove(["apiKey", "apiKeyValid"]);
-      console.log("Storage: API key cleared successfully");
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to clear API key", error);
       return {
         success: false,
         error: error.message || "Failed to clear API key",
@@ -135,12 +129,9 @@ const storage = {
       mergedSettings.lastSyncTimestamp = Date.now();
 
       await chrome.storage.sync.set({ settings: mergedSettings });
-      console.log("Storage: Settings saved successfully", mergedSettings);
 
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to save settings", error);
-
       // Handle quota exceeded error
       if (error.message && error.message.includes("QUOTA")) {
         return {
@@ -175,7 +166,6 @@ const storage = {
         lastSyncTimestamp: settings.lastSyncTimestamp ?? null,
       };
     } catch (error) {
-      console.error("Storage: Failed to get settings", error);
       // Return default settings on error
       return {
         hoverDelay: 500,
@@ -197,7 +187,6 @@ const storage = {
       const settings = await this.getSettings();
       return settings[key];
     } catch (error) {
-      console.error(`Storage: Failed to get setting '${key}'`, error);
       return null;
     }
   },
@@ -228,14 +217,9 @@ const storage = {
       };
 
       await chrome.storage.local.set({ [key]: cacheData });
-      console.log(
-        `Storage: Data cached with key '${key}' (expires in ${expiryMinutes} minutes)`
-      );
 
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to save to cache", error);
-
       // Handle quota exceeded error
       if (error.message && error.message.includes("QUOTA")) {
         // Try to clear old cache entries
@@ -286,13 +270,11 @@ const storage = {
       if (Date.now() > cached.expiry) {
         // Remove expired cache entry
         await chrome.storage.local.remove(key);
-        console.log(`Storage: Cache entry '${key}' expired and removed`);
         return null;
       }
 
       return cached.data;
     } catch (error) {
-      console.error("Storage: Failed to get from cache", error);
       return null;
     }
   },
@@ -305,10 +287,8 @@ const storage = {
   async clearCacheEntry(key) {
     try {
       await chrome.storage.local.remove(key);
-      console.log(`Storage: Cache entry '${key}' cleared`);
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to clear cache entry", error);
       return {
         success: false,
         error: error.message || "Failed to clear cache entry",
@@ -336,10 +316,8 @@ const storage = {
         }
       }
 
-      console.log(`Storage: Cleared ${clearedCount} expired cache entries`);
       return { success: true, cleared: clearedCount };
     } catch (error) {
-      console.error("Storage: Failed to clear expired cache", error);
       return {
         success: false,
         cleared: 0,
@@ -355,10 +333,8 @@ const storage = {
   async clearAllCache() {
     try {
       await chrome.storage.local.clear();
-      console.log("Storage: All cache cleared");
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to clear all cache", error);
       return {
         success: false,
         error: error.message || "Failed to clear all cache",
@@ -395,7 +371,6 @@ const storage = {
         totalSize,
       };
     } catch (error) {
-      console.error("Storage: Failed to get cache stats", error);
       return {
         totalEntries: 0,
         expiredEntries: 0,
@@ -432,7 +407,6 @@ const storage = {
         localAvailable,
       };
     } catch (error) {
-      console.error("Storage: Failed to check storage quota", error);
       return {
         available: false,
         error: error.message || "Failed to check storage quota",
@@ -449,7 +423,6 @@ const storage = {
       const result = await chrome.storage.sync.get("apiKeyValid");
       return result.apiKeyValid === true;
     } catch (error) {
-      console.error("Storage: Failed to get API key validation status", error);
       return false;
     }
   },
@@ -464,7 +437,6 @@ const storage = {
       await chrome.storage.sync.set({ apiKeyValid: isValid });
       return { success: true };
     } catch (error) {
-      console.error("Storage: Failed to set API key validation status", error);
       return {
         success: false,
         error: error.message || "Failed to set API key validation status",
