@@ -105,10 +105,6 @@ class GumroadAPI {
       let data;
       try {
         data = await response.json();
-        console.log(
-          "GumroadAPI: Full API response:",
-          JSON.stringify(data, null, 2)
-        );
       } catch (parseError) {
         return {
           valid: false,
@@ -216,14 +212,8 @@ class GumroadAPI {
       if (window.UsageTracker) {
         try {
           await window.UsageTracker.resetUpgradePromptCount();
-          console.log(
-            "GumroadAPI: Reset upgrade prompt count after Pro activation"
-          );
         } catch (error) {
-          console.warn(
-            "GumroadAPI: Error resetting upgrade prompt count",
-            error
-          );
+          // Silently fail
         }
       }
 
@@ -310,10 +300,7 @@ class GumroadAPI {
           });
       });
     } catch (error) {
-      console.warn(
-        "GumroadAPI: Error sending clearBannerDismissal message",
-        error
-      );
+      // Silently fail - banner dismissal not critical
     }
   }
 

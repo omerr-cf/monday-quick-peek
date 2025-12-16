@@ -35,10 +35,6 @@ class UsageTracker {
       return result.disableUsageTracking === true;
     } catch (error) {
       // Extension context invalidated or other error - default to false (tracking enabled)
-      console.warn(
-        "UsageTracker: Error checking tracking status, defaulting to enabled",
-        error
-      );
       return false;
     }
   }
@@ -113,13 +109,8 @@ class UsageTracker {
       const oldCount = result.upgradePromptCount || 0;
       const newCount = oldCount + 1;
       await chrome.storage.local.set({ upgradePromptCount: newCount });
-      if (newCount >= this.MAX_UPGRADE_PROMPTS) {
-      }
     } catch (error) {
-      console.warn(
-        "UsageTracker: Error incrementing upgrade prompt count",
-        error
-      );
+      // Silently fail - don't block user experience
     }
   }
 
@@ -170,10 +161,9 @@ class UsageTracker {
       });
 
       await chrome.storage.local.set({ usageData: usageData });
-      console.log(
-        `UsageTracker: Incremented usage for ${today}. Total: ${usageData[today]}`
-      );
-    } catch (error) {}
+    } catch (error) {
+      // Silently fail
+    }
   }
 
   /**
@@ -224,10 +214,6 @@ class UsageTracker {
       return licenseStatus === "active";
     } catch (error) {
       // Extension context invalidated or other error - default to false (not Pro)
-      console.warn(
-        "UsageTracker: Error checking Pro status, defaulting to free",
-        error
-      );
       return false;
     }
   }
@@ -294,10 +280,7 @@ class UsageTracker {
       const count = (result.upgradePromptCount || 0) + 1;
       await chrome.storage.local.set({ upgradePromptCount: count });
     } catch (error) {
-      console.warn(
-        "UsageTracker: Error incrementing upgrade prompt count",
-        error
-      );
+      // Silently fail
     }
   }
 
@@ -340,10 +323,9 @@ class UsageTracker {
           disabled ? "true" : "false"
         );
       }
-      console.log(
-        `UsageTracker: Usage tracking ${disabled ? "disabled" : "enabled"}`
-      );
-    } catch (error) {}
+    } catch (error) {
+      // Silently fail
+    }
   }
 
   /**

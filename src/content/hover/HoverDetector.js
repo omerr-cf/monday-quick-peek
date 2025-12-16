@@ -120,15 +120,25 @@
         // Store reference to parent row on the target element
         if (updatesTarget !== row) {
           updatesTarget.dataset.quickPeekParentRow = "true";
-          // Create custom event handlers that pass the row reference
+          // Store row reference for later use
+          updatesTarget._quickPeekRow = row;
+
+          // Create custom event handlers that pass the row reference via proxy
           const createHandler = (handler) => {
             return (event) => {
-              // Override currentTarget to always be the row
-              Object.defineProperty(event, "currentTarget", {
-                value: row,
-                writable: false,
-              });
-              handler.call(updatesTarget, event);
+              // Create proxy event with row as currentTarget (can't modify original)
+              const proxyEvent = {
+                currentTarget: row,
+                target: event.target,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                pageX: event.pageX,
+                pageY: event.pageY,
+                type: event.type,
+                preventDefault: () => event.preventDefault(),
+                stopPropagation: () => event.stopPropagation(),
+              };
+              handler.call(row, proxyEvent);
             };
           };
 

@@ -63,16 +63,12 @@
    */
   function init() {
     if (isInitialized) {
-      console.log("Monday Quick Peek: Already initialized");
       return;
     }
-
-    console.log("Monday Quick Peek: Content script loaded");
 
     // Wait for page to be fully loaded
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
-        console.log("Monday Quick Peek: DOM loaded");
         initializeExtension();
       });
     } else {
@@ -107,7 +103,6 @@
    */
   function attachHoverListenersWithRetry(maxRetries = 5, delay = 1000) {
     if (!HoverDetector) {
-      console.error("HoverDetector not available");
       return;
     }
 
@@ -233,10 +228,6 @@
       try {
         usageCheck = await window.UsageTracker.canShowTooltip();
       } catch (error) {
-        console.warn(
-          "Monday Quick Peek: Error checking usage, allowing tooltip",
-          error
-        );
         // Default to allowing tooltip if there's an error
         usageCheck = {
           allowed: true,
@@ -255,9 +246,6 @@
         // Free user logic
         // If limit reached and should show banner (after 3 prompts), show banner only
         if (usageCheck.showBanner) {
-          console.log(
-            "[Main] 🚩 showBanner=true - will show BANNER only (no tooltip)"
-          );
           // Hide any existing tooltip first
           if (TooltipManager) {
             TooltipManager.hide();
@@ -271,24 +259,13 @@
 
         // If limit reached, check upgrade prompt count
         if (!usageCheck.allowed) {
-          console.log(
-            "[Main] ⚠️ Limit reached (allowed=false) - checking upgrade prompt count..."
-          );
           try {
             // Get current count to determine if we should show prompt or banner
             const currentCount =
               await window.UsageTracker.getUpgradePromptCount();
-            console.log(
-              `[Main] Upgrade prompt count: ${currentCount}/${window.UsageTracker.MAX_UPGRADE_PROMPTS}`
-            );
 
             // Only show prompt if count is less than 3
             if (currentCount < window.UsageTracker.MAX_UPGRADE_PROMPTS) {
-              console.log(
-                `[Main] 🎯 Will show UPGRADE PROMPT (${currentCount + 1}/${
-                  window.UsageTracker.MAX_UPGRADE_PROMPTS
-                })`
-              );
               // Increment count and show prompt
               await window.UsageTracker.incrementUpgradePromptCount();
               if (UpgradeUI) {
@@ -296,9 +273,6 @@
               }
               return; // Don't show tooltip, only upgrade prompt
             } else {
-              console.log(
-                `[Main] 🚫 Max prompts reached (${currentCount}/${window.UsageTracker.MAX_UPGRADE_PROMPTS}) - will show BANNER instead`
-              );
               // Count is 3 or more, show banner instead (don't show prompt anymore)
               // Hide any existing tooltip first
               if (TooltipManager) {
@@ -311,18 +285,11 @@
               return; // Don't show tooltip, only banner
             }
           } catch (error) {
-            console.warn(
-              "Monday Quick Peek: Error checking upgrade prompt count, showing tooltip anyway",
-              error
-            );
             // If there's an error, just show the tooltip normally
           }
         }
 
         // Store usage info for watermark
-        console.log(
-          `[Main] ✅ Limit OK (allowed=true) - will show tooltip with watermark (${usageCheck.remaining} remaining)`
-        );
         tooltip.dataset.usageRemaining = usageCheck.remaining || 10;
         tooltip.dataset.isPro = "false";
       }
@@ -372,9 +339,6 @@
         if (response && response.success && response.data) {
           notesData = response.data;
         } else if (response === null) {
-          console.log(
-            "Monday Quick Peek: Using mock data (extension context issue)"
-          );
           notesData = mockNotes;
         } else if (response && !response.success) {
           throw new Error(response.error || "Failed to fetch content");
@@ -433,10 +397,11 @@
         }
       }, 50);
     } catch (error) {
-      // Use error handler to show error UI
+      // Use error handler to show error UI (no console logging for cleaner output)
       if (window.ErrorHandler) {
         window.ErrorHandler.handle(error, "showTooltip", {
           showUI: true,
+          logError: false,
           retry: true,
           retryCallback: () => showTooltip(row, event),
         });
@@ -472,9 +437,6 @@
     const url = location.href;
     if (url !== lastUrl) {
       lastUrl = url;
-      console.log(
-        "Monday Quick Peek: Page navigation detected, re-initializing"
-      );
       isInitialized = false;
       if (StateManager) {
         StateManager.reset();

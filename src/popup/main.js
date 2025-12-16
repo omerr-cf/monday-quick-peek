@@ -32,8 +32,6 @@ let originalButtonText = "";
  * Initialize popup when DOM is ready
  */
 document.addEventListener("DOMContentLoaded", () => {
-
-
   initializeElements();
   loadSettings();
   attachEventListeners();
@@ -73,7 +71,6 @@ function initializeElements() {
     resetUsageBtn.style.pointerEvents = "auto";
     resetUsageBtn.style.opacity = "1";
     resetUsageBtn.style.cursor = "pointer";
-
   }
 
   // Pro License elements
@@ -181,9 +178,6 @@ function attachEventListeners() {
       }, 150);
       handleResetUsage();
     });
-    console.log("[RESET] Reset button event listener attached");
-  } else {
-    console.error("[RESET] Reset usage button not found!");
   }
 
   // Pro License: Upgrade button
@@ -575,8 +569,7 @@ async function loadDevSettings() {
     if (disableTrackingCheckbox) {
       disableTrackingCheckbox.checked = result.disableUsageTracking === true;
     }
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 
 /**
@@ -609,11 +602,7 @@ async function handleTrackingToggle() {
  * Handle reset usage data
  */
 async function handleResetUsage() {
-
-
-
   // No confirmation needed - reset immediately when clicked
-
 
   // Disable button during reset (but ensure it starts enabled)
   if (resetUsageBtn) {
@@ -626,14 +615,10 @@ async function handleResetUsage() {
     // Now disable for the operation
     resetUsageBtn.disabled = true;
     resetUsageBtn.textContent = "Resetting...";
-
   }
 
   try {
-
-
     if (window.UsageTracker) {
-
       await window.UsageTracker.resetAll();
 
       showStatus(
@@ -641,7 +626,6 @@ async function handleResetUsage() {
         "success"
       );
     } else {
-
       // Fallback: manually reset
       await chrome.storage.local.remove([
         "usageData",
@@ -666,10 +650,8 @@ async function handleResetUsage() {
       );
     }
 
-
     setTimeout(() => hideStatus(), 3000);
   } catch (error) {
-
     showStatus(`Failed to reset usage data: ${error.message}`, "error");
   } finally {
     // Re-enable button
@@ -677,7 +659,6 @@ async function handleResetUsage() {
       resetUsageBtn.disabled = false;
       resetUsageBtn.textContent = "Reset Usage Data";
     }
-
   }
 }
 
@@ -691,7 +672,6 @@ async function handleResetUsage() {
  * Initialize Pro License UI
  */
 async function initializeLicenseUI() {
-
   if (!window.GumroadAPI) {
     showStatus("Gumroad API not loaded. Please reload the extension.", "error");
     return;
@@ -757,7 +737,6 @@ function showFreeView() {
  * Handle license activation
  */
 async function handleActivateLicense() {
-
   // Check if GumroadAPI is loaded
   if (!window.GumroadAPI) {
     showStatus(
@@ -777,11 +756,6 @@ async function handleActivateLicense() {
     return;
   }
 
-  console.log(
-    "Popup: Validating license key:",
-    licenseKey.substring(0, 8) + "..."
-  );
-
   // Disable button during validation
   if (activateLicenseBtn) {
     activateLicenseBtn.disabled = true;
@@ -800,12 +774,13 @@ async function handleActivateLicense() {
       try {
         const tabs = await chrome.tabs.query({});
         for (const tab of tabs) {
-          chrome.tabs.sendMessage(tab.id, { action: "proLicenseActivated" }).catch(() => {
-            // Ignore errors for tabs that don't have content script
-          });
+          chrome.tabs
+            .sendMessage(tab.id, { action: "proLicenseActivated" })
+            .catch(() => {
+              // Ignore errors for tabs that don't have content script
+            });
         }
-      } catch (error) {
-      }
+      } catch (error) {}
 
       setTimeout(() => {
         initializeLicenseUI();
@@ -832,7 +807,6 @@ async function handleActivateLicense() {
  * Handle license deactivation
  */
 async function handleDeactivateLicense() {
-
   if (!window.GumroadAPI) {
     showStatus("Gumroad API not available", "error");
     return;
@@ -843,7 +817,6 @@ async function handleDeactivateLicense() {
     "Deactivate Pro License",
     "Are you sure you want to deactivate your Pro license? You'll lose access to Pro features and unlimited tooltip views."
   );
-
 
   if (!confirmed) {
     return;
@@ -879,9 +852,6 @@ function showConfirmModal(title, message) {
     const modalCancel = document.getElementById("confirmModalCancel");
 
     if (!modal || !modalTitle || !modalMessage || !modalOk || !modalCancel) {
-      console.error(
-        "[CONFIRM] Modal elements not found, falling back to window.confirm"
-      );
       resolve(window.confirm(message));
       return;
     }
@@ -895,7 +865,6 @@ function showConfirmModal(title, message) {
 
     // Clean up previous listeners
     const okHandler = () => {
-
       modal.style.display = "none";
       modalOk.removeEventListener("click", okHandler);
       modalCancel.removeEventListener("click", cancelHandler);
@@ -903,7 +872,6 @@ function showConfirmModal(title, message) {
     };
 
     const cancelHandler = () => {
-
       modal.style.display = "none";
       modalOk.removeEventListener("click", okHandler);
       modalCancel.removeEventListener("click", cancelHandler);
@@ -917,7 +885,6 @@ function showConfirmModal(title, message) {
     // Close on backdrop click
     const backdropHandler = (e) => {
       if (e.target === modal) {
-
         modal.style.display = "none";
         modal.removeEventListener("click", backdropHandler);
         modalOk.removeEventListener("click", okHandler);
