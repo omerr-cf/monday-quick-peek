@@ -225,7 +225,7 @@
     let usageCheck = {
       allowed: true,
       isPro: false,
-      remaining: 10,
+      remaining: 5,
       showBanner: false,
     };
 
@@ -241,7 +241,7 @@
         usageCheck = {
           allowed: true,
           isPro: false,
-          remaining: 10,
+          remaining: 5,
           showBanner: false,
         };
       }

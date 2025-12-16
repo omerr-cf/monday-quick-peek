@@ -32,7 +32,7 @@
           <h3>Upgrade to Pro</h3>
           <p>${tooltipRenderer?.escapeHtml(message) || message}</p>
           <button class="upgrade-btn" onclick="window.open('${productUrl}', '_blank')">
-            Upgrade Now - $9/month
+            Upgrade Now - $5/month
           </button>
           <div class="upgrade-features">
             <div class="feature">✅ Unlimited tooltip views</div>

@@ -6,7 +6,7 @@
  */
 
 class UsageTracker {
-  static FREE_TIER_LIMIT = 10; // Free tier: 10 tooltip views per day
+  static FREE_TIER_LIMIT = 5; // Free tier: 10 tooltip views per day
   static MAX_UPGRADE_PROMPTS = 3; // Show upgrade prompt max 3 times, then switch to banner
 
   /**
@@ -144,8 +144,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("upgradePromptCount");
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -174,8 +173,7 @@ class UsageTracker {
       console.log(
         `UsageTracker: Incremented usage for ${today}. Total: ${usageData[today]}`
       );
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -241,8 +239,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("usageData");
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -325,8 +322,7 @@ class UsageTracker {
     try {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("upgradePromptCount");
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -347,8 +343,7 @@ class UsageTracker {
       console.log(
         `UsageTracker: Usage tracking ${disabled ? "disabled" : "enabled"}`
       );
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
