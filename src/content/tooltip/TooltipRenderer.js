@@ -102,6 +102,7 @@
 
       let html = `<div class="tooltip-header">
         <strong class="tooltip-task-name">${escapeHtml(taskName)}</strong>
+        <button class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light mode">🌓</button>
       </div>`;
 
       // Add search input

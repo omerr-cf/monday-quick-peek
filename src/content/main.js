@@ -368,18 +368,20 @@
 
       TooltipManager.updateContent(content);
 
-      // Add free tier watermark if not Pro user
-      if (window.UsageTracker && tooltip.dataset.isPro !== "true") {
+      // Only add watermark and track usage for FREE users
+      const isPro = tooltip.dataset.isPro === "true";
+
+      if (!isPro && window.UsageTracker) {
         const remaining = parseInt(tooltip.dataset.usageRemaining) || 0;
+
+        // Add watermark
         if (UpgradeUI) {
           UpgradeUI.addWatermark(tooltip, remaining);
         }
-      }
 
-      // Increment usage counter (only for free users)
-      if (window.UsageTracker && tooltip.dataset.isPro !== "true") {
+        // Increment usage counter
         await window.UsageTracker.incrementUsage();
-        const newRemaining = parseInt(tooltip.dataset.usageRemaining) - 1;
+        const newRemaining = remaining - 1;
         if (newRemaining >= 0 && UpgradeUI) {
           UpgradeUI.updateWatermark(tooltip, newRemaining);
         }
@@ -390,10 +392,29 @@
         TooltipPositioner.position(tooltip, row, event);
       }
 
-      // Attach search listeners
+      // Attach search listeners and theme toggle
       setTimeout(() => {
         if (SearchManager) {
           SearchManager.attachListeners(tooltip);
+        }
+
+        // Attach theme toggle listener
+        const themeToggle = tooltip.querySelector(".theme-toggle");
+        if (themeToggle) {
+          themeToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (tooltip.classList.contains("force-dark")) {
+              tooltip.classList.remove("force-dark");
+              tooltip.classList.add("force-light");
+              themeToggle.textContent = "☀️";
+            } else if (tooltip.classList.contains("force-light")) {
+              tooltip.classList.remove("force-light");
+              themeToggle.textContent = "🌓";
+            } else {
+              tooltip.classList.add("force-dark");
+              themeToggle.textContent = "🌙";
+            }
+          });
         }
       }, 50);
     } catch (error) {
