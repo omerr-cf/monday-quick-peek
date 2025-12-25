@@ -387,6 +387,21 @@
         }
       }
 
+      // Track total hovers for review prompt (for all users, including Pro)
+      if (window.UsageTracker) {
+        const newTotal = await window.UsageTracker.incrementTotalHoverCount();
+        // Check if should show review prompt (exactly at threshold)
+        if (newTotal === window.UsageTracker.REVIEW_PROMPT_THRESHOLD) {
+          const hasRated = await window.UsageTracker.hasUserRated();
+          if (!hasRated && UpgradeUI) {
+            // Small delay so tooltip is fully visible first
+            setTimeout(() => {
+              UpgradeUI.showReviewPrompt();
+            }, 1500);
+          }
+        }
+      }
+
       // Position tooltip again after content is loaded
       if (TooltipPositioner) {
         TooltipPositioner.position(tooltip, row, event);

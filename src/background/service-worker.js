@@ -33,10 +33,20 @@ const CONFIG = {
 /**
  * Initialize the background service worker
  */
-chrome.runtime.onInstalled.addListener(() => {
-  // TODO: Set default settings
-  // TODO: Check for existing API key
-  // TODO: Initialize storage
+chrome.runtime.onInstalled.addListener((details) => {
+  // Set uninstall survey URL - redirects user to feedback form when they uninstall
+  chrome.runtime.setUninstallURL(
+    "https://docs.google.com/forms/d/e/1FAIpQLScgweeipg6FVk7lLtaNnuRdNQ9FK4G3VT1g2g2fPwwLyLeYMg/viewform"
+  );
+
+  // Track install date for NPS survey timing
+  if (details.reason === "install") {
+    chrome.storage.local.set({
+      installDate: Date.now(),
+      hasRated: false,
+      npsShown: false,
+    });
+  }
 });
 
 /**

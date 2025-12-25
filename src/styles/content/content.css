@@ -802,3 +802,163 @@ mark.search-highlight {
     display: none !important;
   }
 }
+
+/* ============================================
+   REVIEW PROMPT MODAL
+   ============================================ */
+
+.review-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.review-modal-overlay.show {
+  opacity: 1;
+}
+
+.review-modal {
+  background: linear-gradient(165deg, #1e2028 0%, #15171c 100%);
+  border: 1px solid rgba(0, 212, 170, 0.15);
+  border-radius: 16px;
+  padding: 28px 32px;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 212, 170, 0.1);
+  transform: scale(0.9) translateY(20px);
+  transition: transform 0.3s ease;
+  text-align: center;
+  font-family: var(--tooltip-font-family);
+}
+
+.review-modal-overlay.show .review-modal {
+  transform: scale(1) translateY(0);
+}
+
+.review-modal-header {
+  margin-bottom: 16px;
+}
+
+.review-emoji {
+  font-size: 42px;
+  display: block;
+  margin-bottom: 12px;
+  animation: pulse-star 2s ease-in-out infinite;
+}
+
+@keyframes pulse-star {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.review-modal-header h3 {
+  color: #f0f4f8;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.review-modal-text {
+  color: #a1aab8;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+.review-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--tooltip-font-family);
+}
+
+.review-btn-primary {
+  background: linear-gradient(135deg, #00d4aa 0%, #00b4d8 100%);
+  color: #0d1117;
+}
+
+.review-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 212, 170, 0.4);
+}
+
+.review-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0f4f8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.review-btn-tertiary {
+  background: transparent;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.review-btn-tertiary:hover {
+  color: #a1aab8;
+}
+
+/* Light mode support for review modal */
+@media (prefers-color-scheme: light) {
+  .review-modal {
+    background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+    border-color: rgba(0, 212, 170, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  }
+
+  .review-modal-header h3 {
+    color: #1e293b;
+  }
+
+  .review-modal-text {
+    color: #475569;
+  }
+
+  .review-btn-secondary {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1e293b;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .review-btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .review-btn-tertiary {
+    color: #94a3b8;
+  }
+
+  .review-btn-tertiary:hover {
+    color: #475569;
+  }
+}

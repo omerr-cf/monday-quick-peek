@@ -6,8 +6,9 @@
  */
 
 class UsageTracker {
-  static FREE_TIER_LIMIT = 5; // Free tier: 10 tooltip views per day
+  static FREE_TIER_LIMIT = 5; // Free tier: 5 tooltip views per day
   static MAX_UPGRADE_PROMPTS = 3; // Show upgrade prompt max 3 times, then switch to banner
+  static REVIEW_PROMPT_THRESHOLD = 10; // Show review prompt after 10 successful hovers
 
   /**
    * Check if usage tracking is disabled (dev mode)
@@ -306,6 +307,77 @@ class UsageTracker {
       if (!chrome?.storage?.local) return;
       await chrome.storage.local.remove("upgradePromptCount");
     } catch (error) {}
+  }
+
+  /**
+   * Get total all-time hover count (for review prompt)
+   * @returns {Promise<number>} Total hovers all-time
+   */
+  static async getTotalHoverCount() {
+    try {
+      if (!chrome?.storage?.local) return 0;
+      const result = await chrome.storage.local.get("totalHoverCount");
+      return result.totalHoverCount || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  /**
+   * Increment total hover count (for review prompt tracking)
+   */
+  static async incrementTotalHoverCount() {
+    try {
+      if (!chrome?.storage?.local) return;
+      const result = await chrome.storage.local.get("totalHoverCount");
+      const count = (result.totalHoverCount || 0) + 1;
+      await chrome.storage.local.set({ totalHoverCount: count });
+      return count;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  /**
+   * Check if user has rated the extension
+   * @returns {Promise<boolean>} True if user has rated
+   */
+  static async hasUserRated() {
+    try {
+      if (!chrome?.storage?.local) return false;
+      const result = await chrome.storage.local.get("hasRated");
+      return result.hasRated === true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Mark user as having rated (or dismissed permanently)
+   */
+  static async setHasRated(rated = true) {
+    try {
+      if (!chrome?.storage?.local) return;
+      await chrome.storage.local.set({ hasRated: rated });
+    } catch (error) {
+      // Silently fail
+    }
+  }
+
+  /**
+   * Check if should show review prompt
+   * @returns {Promise<boolean>} True if should show review prompt
+   */
+  static async shouldShowReviewPrompt() {
+    try {
+      const hasRated = await this.hasUserRated();
+      if (hasRated) return false;
+
+      const totalHovers = await this.getTotalHoverCount();
+      return totalHovers === this.REVIEW_PROMPT_THRESHOLD;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**

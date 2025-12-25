@@ -562,9 +562,19 @@ function hideLoadingOverlay() {
 
 /**
  * Load dev settings
+ * Dev section is only shown when extension is loaded unpacked (developer mode)
  */
 async function loadDevSettings() {
   try {
+    // Show dev section only if extension is loaded unpacked (no update URL = unpacked)
+    const devSection = document.getElementById("devSection");
+    const manifest = chrome.runtime.getManifest();
+    const isUnpacked = !manifest.update_url;
+
+    if (devSection && isUnpacked) {
+      devSection.style.display = "block";
+    }
+
     const result = await chrome.storage.local.get("disableUsageTracking");
     if (disableTrackingCheckbox) {
       disableTrackingCheckbox.checked = result.disableUsageTracking === true;

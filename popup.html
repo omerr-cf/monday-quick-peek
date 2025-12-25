@@ -506,17 +506,23 @@
       <div class="status-message" id="statusMessage"></div>
 
       <div class="help-text">
-        <p>
-          Get your API key from your Monday.com account settings. You'll need
-          developer access to generate a token.
+        <p style="margin-bottom: 8px">
+          <strong>How to get your API key:</strong>
         </p>
-        <a
-          href="https://auth.monday.com/users/sign_in_new"
-          target="_blank"
-          rel="noopener noreferrer"
+        <ol
+          style="
+            margin: 0;
+            padding-left: 20px;
+            font-size: 12px;
+            line-height: 1.6;
+          "
         >
-          How to get your API key
-        </a>
+          <li>Go to monday.com</li>
+          <li>Click your profile picture (top right)</li>
+          <li>Select "Developers"</li>
+          <li>Click "My Access Tokens"</li>
+          <li>Generate or copy your token</li>
+        </ol>
       </div>
 
       <!-- Pro License Section -->
@@ -727,11 +733,12 @@
         </div>
       </div>
 
-      <!-- Dev Mode Section -->
+      <!-- Dev Mode Section (Hidden by default, show only for developers) -->
       <div
         class="dev-section"
         id="devSection"
         style="
+          display: none;
           margin-top: 24px;
           padding-top: 24px;
           border-top: 1px solid #e1e4e8;

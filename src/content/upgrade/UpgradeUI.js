@@ -220,6 +220,107 @@
         });
       }
     },
+
+    /**
+     * Show review prompt modal (after 10 successful hovers)
+     */
+    showReviewPrompt() {
+      // Don't show if already showing
+      if (document.getElementById("quick-peek-review-modal")) {
+        return;
+      }
+
+      const modal = document.createElement("div");
+      modal.id = "quick-peek-review-modal";
+      modal.className = "review-modal-overlay";
+      modal.innerHTML = `
+        <div class="review-modal">
+          <div class="review-modal-header">
+            <span class="review-emoji">⭐</span>
+            <h3>Enjoying Quick Peek?</h3>
+          </div>
+          <p class="review-modal-text">Help others discover it - leave a quick review!</p>
+          <div class="review-modal-buttons">
+            <button class="review-btn review-btn-primary" data-action="rate">
+              ⭐ Rate Now
+            </button>
+            <button class="review-btn review-btn-secondary" data-action="later">
+              Maybe Later
+            </button>
+            <button class="review-btn review-btn-tertiary" data-action="never">
+              Don't Ask Again
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Add animation class after insert
+      requestAnimationFrame(() => {
+        modal.classList.add("show");
+      });
+
+      // Event listeners
+      modal
+        .querySelector('[data-action="rate"]')
+        .addEventListener("click", () => {
+          // Open Chrome Web Store review page
+          // Get extension ID from chrome.runtime
+          const extensionId = chrome.runtime?.id || "your-extension-id";
+          window.open(
+            `https://chromewebstore.google.com/detail/monday-quick-peek/${extensionId}/reviews`,
+            "_blank"
+          );
+          this.closeReviewPrompt();
+          // Mark as rated
+          if (window.UsageTracker) {
+            window.UsageTracker.setHasRated(true);
+          }
+        });
+
+      modal
+        .querySelector('[data-action="later"]')
+        .addEventListener("click", () => {
+          this.closeReviewPrompt();
+          // Reset hover count so prompt shows again after another 10 hovers
+          if (chrome?.storage?.local) {
+            chrome.storage.local.set({ totalHoverCount: 0 });
+          }
+        });
+
+      modal
+        .querySelector('[data-action="never"]')
+        .addEventListener("click", () => {
+          this.closeReviewPrompt();
+          // Mark as rated (won't show again)
+          if (window.UsageTracker) {
+            window.UsageTracker.setHasRated(true);
+          }
+        });
+
+      // Close on overlay click
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          this.closeReviewPrompt();
+        }
+      });
+    },
+
+    /**
+     * Close review prompt modal
+     */
+    closeReviewPrompt() {
+      const modal = document.getElementById("quick-peek-review-modal");
+      if (modal) {
+        modal.classList.remove("show");
+        setTimeout(() => {
+          if (modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+          }
+        }, 300);
+      }
+    },
   };
 
   // Export globally
