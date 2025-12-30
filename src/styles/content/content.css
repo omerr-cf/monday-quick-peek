@@ -776,6 +776,16 @@ mark.search-highlight {
   --carbon-border-input: rgba(0, 0, 0, 0.1);
 }
 
+/* Light mode - ensure title is dark and visible */
+#quick-peek-tooltip.force-light .tooltip-header strong,
+#quick-peek-tooltip.force-light .tooltip-task-name {
+  color: #1e293b !important;
+}
+
+#quick-peek-tooltip.force-light .author-name {
+  color: #1e293b !important;
+}
+
 #quick-peek-tooltip.force-light .search-input {
   color: #0d9488 !important;
   background: rgba(0, 0, 0, 0.05);
