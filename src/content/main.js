@@ -28,21 +28,6 @@
   // Merge CONFIG into window.CONFIG for modules
   window.CONFIG = { ...window.CONFIG, ...CONFIG };
 
-  // Mock data for fallback
-  const mockNotes = {
-    taskName: "Example Task",
-    notes: [
-      {
-        id: "1",
-        author: "Sarah Kim",
-        authorPhoto: "https://via.placeholder.com/32",
-        content:
-          "This is a test note about the task. It contains important information that the user wants to preview quickly.",
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      },
-    ],
-  };
-
   // Dependencies (loaded via manifest.json)
   const StateManager = window.StateManager;
   const HoverDetector = window.HoverDetector;
@@ -338,15 +323,17 @@
 
         if (response && response.success && response.data) {
           notesData = response.data;
-        } else if (response === null) {
-          notesData = mockNotes;
         } else if (response && !response.success) {
           throw new Error(response.error || "Failed to fetch content");
         } else {
-          notesData = mockNotes;
+          // No valid response - hide tooltip silently
+          TooltipManager.hide();
+          return;
         }
       } else {
-        notesData = mockNotes;
+        // No itemId or ContentAPI - can't fetch data, hide tooltip
+        TooltipManager.hide();
+        return;
       }
 
       // Check if there are any notes
