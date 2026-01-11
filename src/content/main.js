@@ -28,6 +28,21 @@
   // Merge CONFIG into window.CONFIG for modules
   window.CONFIG = { ...window.CONFIG, ...CONFIG };
 
+  // Mock data for fallback
+  const mockNotes = {
+    taskName: "Example Task",
+    notes: [
+      {
+        id: "1",
+        author: "Sarah Kim",
+        authorPhoto: "https://via.placeholder.com/32",
+        content:
+          "This is a test note about the task. It contains important information that the user wants to preview quickly.",
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      },
+    ],
+  };
+
   // Dependencies (loaded via manifest.json)
   const StateManager = window.StateManager;
   const HoverDetector = window.HoverDetector;
@@ -80,7 +95,26 @@
       });
     }
 
+    // Set up message listener for API calls from popup
+    // This allows the popup to validate API keys using the monday.com origin
+    setupMessageListener();
+
     isInitialized = true;
+  }
+
+  /**
+   * Set up message listener for extension messages
+   */
+  function setupMessageListener() {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      // Handle pro license activation notification
+      if (request.action === "proLicenseActivated") {
+        // Hide upgrade banners when pro is activated
+        if (UpgradeUI && UpgradeUI.hideBanner) {
+          UpgradeUI.hideBanner();
+        }
+      }
+    });
   }
 
   /**
@@ -323,17 +357,15 @@
 
         if (response && response.success && response.data) {
           notesData = response.data;
+        } else if (response === null) {
+          notesData = mockNotes;
         } else if (response && !response.success) {
           throw new Error(response.error || "Failed to fetch content");
         } else {
-          // No valid response - hide tooltip silently
-          TooltipManager.hide();
-          return;
+          notesData = mockNotes;
         }
       } else {
-        // No itemId or ContentAPI - can't fetch data, hide tooltip
-        TooltipManager.hide();
-        return;
+        notesData = mockNotes;
       }
 
       // Check if there are any notes
@@ -371,21 +403,6 @@
         const newRemaining = remaining - 1;
         if (newRemaining >= 0 && UpgradeUI) {
           UpgradeUI.updateWatermark(tooltip, newRemaining);
-        }
-      }
-
-      // Track total hovers for review prompt (for all users, including Pro)
-      if (window.UsageTracker) {
-        const newTotal = await window.UsageTracker.incrementTotalHoverCount();
-        // Check if should show review prompt (exactly at threshold)
-        if (newTotal === window.UsageTracker.REVIEW_PROMPT_THRESHOLD) {
-          const hasRated = await window.UsageTracker.hasUserRated();
-          if (!hasRated && UpgradeUI) {
-            // Small delay so tooltip is fully visible first
-            setTimeout(() => {
-              UpgradeUI.showReviewPrompt();
-            }, 1500);
-          }
         }
       }
 

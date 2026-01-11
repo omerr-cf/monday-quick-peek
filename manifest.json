@@ -1,12 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Monday Quick Peek - Instant Task Previews",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "See Monday.com task notes instantly on hover. No more clicking! Save 2+ hours/week with quick previews.",
 
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "declarativeNetRequest", "declarativeNetRequestWithHostAccess"],
 
   "host_permissions": ["https://*.monday.com/*", "https://api.gumroad.com/*"],
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
 
   "background": {
     "service_worker": "src/background/service-worker.js"

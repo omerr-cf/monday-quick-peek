@@ -9,7 +9,7 @@
 
   const CONFIG = {
     apiBaseUrl: "https://api.monday.com/v2",
-    apiVersion: "2023-10",
+    apiVersion: "2025-10",
   };
 
   // Dependencies (loaded before this script)
@@ -40,14 +40,17 @@
           await deps.RateLimiter.checkRateLimit();
         }
 
+        // Clean API key and use credentials: 'omit' to prevent cookie conflicts
+        const cleanApiKey = apiKey.trim();
         const response = await fetch(CONFIG.apiBaseUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: apiKey,
-            "API-Version": CONFIG.apiVersion,
+            Accept: "*/*",
+            Authorization: cleanApiKey,
           },
           body: JSON.stringify({ query }),
+          credentials: "omit",
         });
 
         // Handle HTTP errors
@@ -185,23 +188,37 @@
     async validateApiKey(apiKey) {
       const deps = getDependencies();
       const query = deps.GraphQLQueries.buildMeQuery();
+      const cleanKey = apiKey.trim();
 
       try {
         const response = await fetch(CONFIG.apiBaseUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: apiKey.trim(),
-            "API-Version": CONFIG.apiVersion,
+            Authorization: cleanKey,
           },
           body: JSON.stringify({ query }),
+          credentials: "omit",
         });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Invalid API key. Please check your API key.");
+          } else if (response.status === 403) {
+            throw new Error(
+              "Access forbidden. Your Monday.com account may not have API access, or the token is invalid."
+            );
+          } else {
+            throw new Error(
+              `API request failed: ${response.status} ${response.statusText}`
+            );
+          }
+        }
 
         const data = await response.json();
 
-        if (data.errors || !response.ok) {
-          const error = data.errors?.[0] || { message: "Invalid API key" };
-          throw new Error(error.message || "Invalid API key");
+        if (data.errors && data.errors.length > 0) {
+          throw new Error(data.errors[0].message || "Invalid API key");
         }
 
         const user = data.data?.me;
@@ -239,20 +256,24 @@
       );
 
       try {
+        const cleanApiKey = apiKey.trim();
         const response = await fetch(CONFIG.apiBaseUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: apiKey,
-            "API-Version": CONFIG.apiVersion,
+            Accept: "*/*",
+            Authorization: cleanApiKey,
           },
           body: JSON.stringify({ query }),
+          credentials: "omit",
         });
 
         // Handle HTTP errors
         if (!response.ok) {
           if (response.status === 401) {
             throw new Error("Invalid API key");
+          } else if (response.status === 403) {
+            throw new Error("Access forbidden");
           } else if (response.status === 429) {
             throw new Error("Rate limit exceeded");
           } else if (response.status === 404) {

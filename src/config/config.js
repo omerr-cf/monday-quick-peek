@@ -23,7 +23,7 @@
 
     // API settings
     apiBaseUrl: "https://api.monday.com/v2",
-    apiVersion: "2023-10",
+    apiVersion: "2025-10",
     cacheExpiry: 5 * 60 * 1000, // 5 minutes
     maxCacheSize: 100,
     rateLimitDelay: 1000, // Delay between requests

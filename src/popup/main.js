@@ -279,7 +279,25 @@ async function handleSaveAndTest() {
       setButtonNormal();
     }
   } catch (error) {
+    // Save the key anyway but mark as not validated
+    // This allows users to try the key even if validation has issues
+    await chrome.storage.sync.set({
+      apiKey: apiKey,
+      apiKeyValid: false,
+    });
+
     handleApiError(error);
+
+    // Show additional help for 403 errors
+    if (error.message && error.message.includes("403")) {
+      setTimeout(() => {
+        showStatus(
+          "⚠️ API key saved but not validated. The key might still work - try hovering over a task on Monday.com to test it.",
+          "info"
+        );
+      }, 3500);
+    }
+
     updateConnectionStatus("not-connected");
     setButtonNormal();
   } finally {
@@ -294,68 +312,44 @@ async function handleSaveAndTest() {
  * @returns {Promise<boolean>} True if API key is valid
  */
 async function testApiKey(apiKey) {
-  try {
-    // Monday.com API endpoint to test authentication
-    const response = await fetch("https://api.monday.com/v2", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: apiKey,
-        "API-Version": "2023-10",
+  // Clean the API key - remove any whitespace or newlines
+  const cleanKey = apiKey.trim().replace(/[\r\n]/g, "");
+
+  // Use background service worker - declarativeNetRequest removes Origin header
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      {
+        action: "validateApiKey",
+        apiKey: cleanKey,
       },
-      body: JSON.stringify({
-        query: `
-          query {
-            me {
-              id
-              name
-              email
-            }
-          }
-        `,
-      }),
-    });
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(
+            new Error(
+              chrome.runtime.lastError.message ||
+                "Failed to connect to background script"
+            )
+          );
+          return;
+        }
 
-    if (!response.ok) {
-      // Handle different HTTP status codes
-      if (response.status === 401) {
-        throw new Error("Invalid API key. Authentication failed.");
-      } else if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again later.");
-      } else if (response.status >= 500) {
-        throw new Error(
-          "Monday.com API is temporarily unavailable. Please try again later."
-        );
-      } else {
-        throw new Error(`API request failed with status ${response.status}`);
+        if (!response) {
+          reject(
+            new Error(
+              "No response from background script. Try reloading the extension."
+            )
+          );
+          return;
+        }
+
+        if (response.success && response.valid) {
+          resolve(true);
+        } else {
+          reject(new Error(response.error || "API key validation failed"));
+        }
       }
-    }
-
-    const data = await response.json();
-
-    // Check for GraphQL errors
-    if (data.errors && data.errors.length > 0) {
-      const errorMessage =
-        data.errors[0].message || "API key validation failed";
-      throw new Error(errorMessage);
-    }
-
-    // Check if we got user data (means API key is valid)
-    if (data.data && data.data.me) {
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    // Re-throw with more context
-    if (
-      error.message.includes("Failed to fetch") ||
-      error.message.includes("NetworkError")
-    ) {
-      throw new Error("Network error. Please check your internet connection.");
-    }
-    throw error;
-  }
+    );
+  });
 }
 
 /**

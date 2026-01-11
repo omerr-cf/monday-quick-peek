@@ -27,7 +27,7 @@ const CONFIG = {
   apiBaseUrl: "https://api.monday.com/v2",
   cacheExpiry: 5 * 60 * 1000, // 5 minutes
   maxCacheSize: 100,
-  apiVersion: "2023-10",
+  apiVersion: "2025-10",
 };
 
 /**

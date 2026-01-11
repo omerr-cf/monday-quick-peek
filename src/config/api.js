@@ -5,7 +5,7 @@
 
 export const API_CONFIG = {
   baseUrl: "https://api.monday.com/v2",
-  version: "2023-10",
+  version: "2025-10",
   headers: {
     "Content-Type": "application/json",
   },
